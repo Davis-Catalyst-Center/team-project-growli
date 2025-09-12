@@ -3,11 +3,15 @@ import tkinter.messagebox as msgbox
 import urllib.request as req
 
 
-
 def main():
     # Create Window
     root = tk.Tk()
     root.title("Grocery List Generator")
+
+
+    # textbox for input
+    entry_ingredient = tk.Entry(root)
+    entry_ingredient.pack()
 
 
 
