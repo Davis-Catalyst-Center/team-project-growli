@@ -6,10 +6,20 @@ import os
 
 os.environ["DISPLAY"] = ":0"
 
-# Having issues with DISPLAY that are only occuring when using GitHub
+# Use Visual Studio Code
+# Install GitHub Pull Requests and Git
+
+URL = "https://www.allrecipes.com/recipe/62696/chicken-parmesan-casserole/"
 
 entryIngredient = None
 labelList = None
+
+def getHtml():
+    with req.urlopen(URL) as response:
+        htmlAsBytes = response.read()
+        html = htmlAsBytes.decode("utf-8")
+        return html
+
 
 def entered():
     global entryIngredient
