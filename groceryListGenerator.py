@@ -1,7 +1,10 @@
 import tkinter as tk
 import tkinter.messagebox as msgbox
 import urllib.request as req
+import os
 
+
+os.environ["DISPLAY"] = ":0"
 
 # Having issues with DISPLAY that are only occuring when using GitHub
 
