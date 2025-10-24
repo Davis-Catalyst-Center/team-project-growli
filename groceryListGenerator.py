@@ -77,25 +77,29 @@ def getInfo(html):
     while currentIndex >= 0:
         # Find Quantity
         startIndexQuant = html.find("data-ingredient-quantity=\"true\">", currentIndex)
-        garbage = len("data-ingredient-quantity=\"true\">")
-        endIndexQuant = html.find("</span> <span data-ingredient-unit=\"true\">", startIndexQuant)
-        quantity = html[startIndexQuant + garbage:endIndexQuant]
+        if startIndexQuant != -1:
+            garbage = len("data-ingredient-quantity=\"true\">")
+            endIndexQuant = html.find("</span> <span data-ingredient-unit=\"true\">", startIndexQuant)
+            quantity = html[startIndexQuant + garbage:endIndexQuant]
 
-        # Find Unit
-        startIndexUnit = html.find("data-ingredient-unit=\"true\">", currentIndex)
-        garbage = len("data-ingredient-unit=\"true\">")
-        endIndexUnit = html.find("</span> <span data-ingredient-name=\"true\">", startIndexUnit)
-        unit = html[startIndexUnit + garbage:endIndexUnit]
+            # Find Unit
+            startIndexUnit = html.find("data-ingredient-unit=\"true\">", currentIndex)
+            garbage = len("data-ingredient-unit=\"true\">")
+            endIndexUnit = html.find("</span> <span data-ingredient-name=\"true\">", startIndexUnit)
+            unit = html[startIndexUnit + garbage:endIndexUnit]
 
-        # Find Ingredient Name
-        startIndexName = html.find("data-ingredient-name=\"true\">", currentIndex)
-        garbage = len("data-ingredient-name=\"true\">")
-        endIndexName = html.find("</span></p>", startIndexName)
-        name = html[startIndexName + garbage:endIndexName]
+            # Find Ingredient Name
+            startIndexName = html.find("data-ingredient-name=\"true\">", currentIndex)
+            garbage = len("data-ingredient-name=\"true\">")
+            endIndexName = html.find("</span></p>", startIndexName)
+            name = html[startIndexName + garbage:endIndexName]
 
-        currentIndex = endIndexName
-        
-        allThings.append(Ingredients(quantity, unit, name))
+            currentIndex = endIndexName
+            
+            allThings.append(Ingredients(quantity, unit, name))
+
+        else:
+            currentIndex = startIndexQuant
         
 
 def entered():
