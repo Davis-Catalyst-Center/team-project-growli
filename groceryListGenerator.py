@@ -5,8 +5,11 @@ import urllib.request as req
 import tkinter as tk
 from tkinter import messagebox
 
-# NOTE: if you need to set DISPLAY for headless environments, set it outside the script.
-# os.environ["DISPLAY"] = ":0"
+class Ingredient:
+    def __init__(self, quantity, unit, name):
+        self.quantity = quantity
+        self.unit = unit
+        self.name = name
 
 URL = ""
 
@@ -14,16 +17,13 @@ entryLink = None
 labelList = None
 allThings = []
 
-# Parsing lives in a separate module to make it easy to test without importing tkinter
-from parser import Ingredient, get_html, get_info
-
 # Simple in-memory user store: username -> password_hash
 USER_STORE = {}
 
-def hash_password(password: str) -> str:
+def hashPassword(password: str) -> str:
     return hashlib.sha256(password.encode("utf-8")).hexdigest()
 
-def save_user_store(path: str = None):
+def saveUserStore(path: str = None):
     """Persist USER_STORE to CSV file. Overwrites existing file.
     Each row: username, password_hash
     """
@@ -38,7 +38,7 @@ def save_user_store(path: str = None):
         # don't crash the app for persistence errors; show a warning instead
         print(f"Warning: could not save users to {path}: {e}")
 
-def load_user_store(path: str = None):
+def loadUserStore(path: str = None):
     if path is None:
         path = os.path.join(os.getcwd(), "Users.csv")
     if not os.path.exists(path):
@@ -55,118 +55,118 @@ def load_user_store(path: str = None):
     except Exception as e:
         print(f"Warning: could not load users from {path}: {e}")
 
-def get_html(url: str) -> str:
+def getHtml(url: str) -> str:
     request = req.Request(url, headers={"User-Agent": "Mozilla/5.0"})
     with req.urlopen(request) as response:
         data = response.read()
         return data.decode("utf-8")
 
-def get_info(html: str):
+def getInfo(html: str):
     """Parse ingredient triples from html and return list of Ingredient.
     The parser is defensive: stops when markers are not found.
     """
     items = []
-    current_index = 0
+    currentIndex = 0
     while True:
         # Find Quantity
-        start_q = html.find('data-ingredient-quantity="true">', current_index)
-        if start_q == -1:
+        startQ = html.find('data-ingredient-quantity="true">', currentIndex)
+        if startQ == -1:
             break
-        start_q += len('data-ingredient-quantity="true">')
-        end_q = html.find('</span>', start_q)
-        if end_q == -1:
+        startQ += len('data-ingredient-quantity="true">')
+        endQ = html.find('</span>', startQ)
+        if endQ == -1:
             break
-        quantity = html[start_q:end_q].strip()
+        quantity = html[startQ:endQ].strip()
 
         # Find Unit (expect it after quantity)
-        start_u = html.find('data-ingredient-unit="true">', end_q)
-        if start_u == -1:
+        startU = html.find('data-ingredient-unit="true">', endQ)
+        if startU == -1:
             break
-        start_u += len('data-ingredient-unit="true">')
-        end_u = html.find('</span>', start_u)
-        if end_u == -1:
+        startU += len('data-ingredient-unit="true">')
+        endU = html.find('</span>', startU)
+        if endU == -1:
             break
-        unit = html[start_u:end_u].strip()
+        unit = html[startU:endU].strip()
 
         # Find Name
-        start_n = html.find('data-ingredient-name="true">', end_u)
-        if start_n == -1:
+        startN = html.find('data-ingredient-name="true">', endU)
+        if startN == -1:
             break
-        start_n += len('data-ingredient-name="true">')
-        end_n = html.find('</span>', start_n)
-        if end_n == -1:
+        startN += len('data-ingredient-name="true">')
+        endN = html.find('</span>', startN)
+        if endN == -1:
             break
-        name = html[start_n:end_n].strip()
+        name = html[startN:endN].strip()
 
         items.append(Ingredient(quantity, unit, name))
-        current_index = end_n
+        currentIndex = endN
 
     return items
 
-def show_register_dialog(parent) -> None:
+def showRegisterDialog(parent) -> None:
     dlg = tk.Toplevel(parent)
     dlg.title("Register")
     dlg.grab_set()
 
     tk.Label(dlg, text="Username:").pack(pady=2)
-    user_ent = tk.Entry(dlg)
-    user_ent.pack(pady=2)
+    userEnt = tk.Entry(dlg)
+    userEnt.pack(pady=2)
 
     tk.Label(dlg, text="Password:").pack(pady=2)
-    pass_ent = tk.Entry(dlg, show="*")
-    pass_ent.pack(pady=2)
+    passEnt = tk.Entry(dlg, show="*")
+    passEnt.pack(pady=2)
 
-    def do_register():
-        username = user_ent.get().strip()
-        password = pass_ent.get()
+    def doRegister():
+        username = userEnt.get().strip()
+        password = passEnt.get()
         if not username or not password:
             messagebox.showwarning("Input Error", "Please enter both username and password.")
             return
         if username in USER_STORE:
             messagebox.showerror("Error", "Username already exists")
             return
-        USER_STORE[username] = hash_password(password)
+        USER_STORE[username] = hashPassword(password)
         messagebox.showinfo("Success", f"Registered {username}")
         # persist the user store after successful registration
         try:
-            save_user_store()
+            saveUserStore()
         except Exception:
             # non-fatal; warn on console
             print("Warning: failed to save user store after registration")
         dlg.destroy()
 
-    tk.Button(dlg, text="Register", command=do_register).pack(pady=6)
+    tk.Button(dlg, text="Register", command=doRegister).pack(pady=6)
     parent.wait_window(dlg)
 
-def show_login_dialog(parent) -> bool:
+def showLoginDialog(parent) -> bool:
     dlg = tk.Toplevel(parent)
     dlg.title("Login")
     dlg.grab_set()
 
     tk.Label(dlg, text="Username:").pack(pady=2)
-    user_ent = tk.Entry(dlg)
-    user_ent.pack(pady=2)
+    userEnt = tk.Entry(dlg)
+    userEnt.pack(pady=2)
 
     tk.Label(dlg, text="Password:").pack(pady=2)
-    pass_ent = tk.Entry(dlg, show="*")
-    pass_ent.pack(pady=2)
+    passEnt = tk.Entry(dlg, show="*")
+    passEnt.pack(pady=2)
 
     result = {"ok": False}
 
-    def do_login():
-        username = user_ent.get().strip()
-        password = pass_ent.get()
+    def doLogin():
+        username = userEnt.get().strip()
+        password = passEnt.get()
         if username not in USER_STORE:
             messagebox.showerror("Error", "Invalid Username or Password")
             return
-        if USER_STORE[username] != hash_password(password):
+        if USER_STORE[username] != hashPassword(password):
             messagebox.showerror("Error", "Invalid Username or Password")
             return
         messagebox.showinfo("Success", "Login successful")
         result["ok"] = True
         dlg.destroy()
 
-    tk.Button(dlg, text="Login", command=do_login).pack(pady=6)
+    tk.Button(dlg, text="Login", command=doLogin).pack(pady=6)
     parent.wait_window(dlg)
     return result["ok"]
 
@@ -177,13 +177,13 @@ def entered():
         messagebox.showwarning("Input Error", "Please enter a URL")
         return
     try:
-        html = get_html(url)
+        html = getHtml(url)
     except Exception as e:
         messagebox.showerror("Network Error", f"Could not fetch URL: {e}")
         return
 
     # parse
-    items = get_info(html)
+    items = getInfo(html)
     if not items:
         messagebox.showinfo("No ingredients", "No ingredients were found on that page.")
         return
@@ -196,7 +196,7 @@ def entered():
 
 def main():
     # load persisted users (if any)
-    load_user_store()
+    loadUserStore()
 
     root = tk.Tk()
     root.title("Grocery List Generator")
@@ -207,25 +207,25 @@ def main():
     frame.pack(pady=10)
 
     tk.Label(frame, text="Please register or login to continue").pack()
-    btn_frame = tk.Frame(frame)
-    btn_frame.pack(pady=6)
+    btnFrame = tk.Frame(frame)
+    btnFrame.pack(pady=6)
 
-    def on_register():
-        show_register_dialog(root)
+    def onRegister():
+        showRegisterDialog(root)
 
-    def on_login():
-        ok = show_login_dialog(root)
+    def onLogin():
+        ok = showLoginDialog(root)
         if ok:
             # Destroy auth frame and continue to main UI
             frame.destroy()
-            build_main_ui(root)
+            buildMainUi(root)
 
-    tk.Button(btn_frame, text="Register", command=on_register).pack(side=tk.LEFT, padx=6)
-    tk.Button(btn_frame, text="Login", command=on_login).pack(side=tk.LEFT, padx=6)
+    tk.Button(btnFrame, text="Register", command=onRegister).pack(side=tk.LEFT, padx=6)
+    tk.Button(btnFrame, text="Login", command=onLogin).pack(side=tk.LEFT, padx=6)
 
     root.mainloop()
 
-def build_main_ui(root):
+def buildMainUi(root):
     global entryLink, labelList
     # label for instructions
     labelInstructions = tk.Label(root, text="Please enter a link to a recipe page and press Enter")
