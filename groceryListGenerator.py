@@ -12,10 +12,18 @@ PASSWORD = []
 # Use Visual Studio Code
 # Install GitHub Pull Requests and Git
 
-URL = "https://www.allrecipes.com/recipe/62696/chicken-parmesan-casserole/"
+URL = ""
 
-entryIngredient = None
+entryLink = None
 labelList = None
+allThings = []
+
+class Ingredients:
+    def __init__(self, quantity, unit, name):
+        self.quantity = quantity
+        self.unit = unit
+        self.name = name
+
 def register_user():
     """Function to handle user registration when the button is clicked."""
     username = username_entry.get()
@@ -56,22 +64,52 @@ register_button.pack(pady=10)
 root.mainloop()
 
 def getHtml():
-    with req.urlopen(URL) as response:
+    request = req.Request(URL, headers= {"User-Agent": "Mozilla/5.0"})
+    with req.urlopen(request) as response:
         htmlAsBytes = response.read()
         html = htmlAsBytes.decode("utf-8")
+        print(html)
         return html
 
+def getInfo(html):
+    global allThings
+    currentIndex = 0
+    while currentIndex >= 0:
+        # Find Quantity
+        startIndexQuant = html.find("data-ingredient-quantity=\"true\">", currentIndex)
+        garbage = len("data-ingredient-quantity=\"true\">")
+        endIndexQuant = html.find("</span> <span data-ingredient-unit=\"true\">", startIndexQuant)
+        quantity = html[startIndexQuant + garbage:endIndexQuant]
+
+        # Find Unit
+        startIndexUnit = html.find("data-ingredient-unit=\"true\">", currentIndex)
+        garbage = len("data-ingredient-unit=\"true\">")
+        endIndexUnit = html.find("</span> <span data-ingredient-name=\"true\">", startIndexUnit)
+        unit = html[startIndexUnit + garbage:endIndexUnit]
+
+        # Find Ingredient Name
+        startIndexName = html.find("data-ingredient-name=\"true\">", currentIndex)
+        garbage = len("data-ingredient-name=\"true\">")
+        endIndexName = html.find("</span></p>", startIndexName)
+        name = html[startIndexName + garbage:endIndexName]
+
+        currentIndex = endIndexName
+        
+        allThings.append(Ingredients(quantity, unit, name))
+        
 
 def entered():
-    global entryIngredient
-    ingredient = entryIngredient.get()
+    global entryLink, URL
+    URL = entryLink.get()
     labelListText = labelList.cget("text")
+    getInfo(getHtml())
     if labelListText != "":
-        labelList.configure(text=labelListText + "\n" + ingredient)
+        labelList.configure(text=labelListText + "\n" + allThings[-1].quantity + " " + allThings[-1].unit + " " + allThings[-1].name)
     else:
-        labelList.configure(text=ingredient)
+        labelList.configure(text=allThings[-1].quantity + " " + allThings[-1].unit + " " + allThings[-1].name)
 
-    entryIngredient.delete(0, "end")
+    entryLink.delete(0, "end")
+
 def validate_login():
     username = username_entry.get()
     password = password_entry.get()
@@ -114,13 +152,13 @@ def main():
 
 
     # label for instructions
-    labelInstructions = tk.Label(root, text="Please enter your ingredients")
+    labelInstructions = tk.Label(root, text="Please enter your link")
     labelInstructions.pack()
 
     # textbox for input
-    global entryIngredient
-    entryIngredient = tk.Entry(root)
-    entryIngredient.pack()
+    global entryLink
+    entryLink = tk.Entry(root)
+    entryLink.pack()
 
     # List
     global labelList
