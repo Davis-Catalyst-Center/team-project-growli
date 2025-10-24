@@ -1,16 +1,12 @@
-import tkinter as tk
-import tkinter.messagebox as msgbox
-import urllib.request as req
 import os
-from tkinter import messagebox
+import csv
 import hashlib
-os.environ["DISPLAY"] = ":0"
+import urllib.request as req
+import tkinter as tk
+from tkinter import messagebox
 
-# Having issues with DISPLAY that are only occuring when using GitHub
-VALID_USERS = []
-PASSWORD = []
-# Use Visual Studio Code
-# Install GitHub Pull Requests and Git
+# NOTE: if you need to set DISPLAY for headless environments, set it outside the script.
+# os.environ["DISPLAY"] = ":0"
 
 URL = ""
 
@@ -18,158 +14,233 @@ entryLink = None
 labelList = None
 allThings = []
 
-class Ingredients:
-    def __init__(self, quantity, unit, name):
-        self.quantity = quantity
-        self.unit = unit
-        self.name = name
+# Parsing lives in a separate module to make it easy to test without importing tkinter
+from parser import Ingredient, get_html, get_info
 
-def register_user():
-    """Function to handle user registration when the button is clicked."""
-    username = username_entry.get()
-    password = password_entry.get()
+# Simple in-memory user store: username -> password_hash
+USER_STORE = {}
 
-    if username and password:
-        VALID_USERS.append(username)
-        PASSWORD.append(password)
-        messagebox.showinfo("Success", f"User '{username}' registered successfully!")
-        # Clear the entry fields after registration
-        username_entry.delete(0, tk.END)
-        password_entry.delete(0, tk.END)
-        print("Registered Users:", VALID_USERS)
-        print("Passwords:", PASSWORD)
-    else:
-        messagebox.showwarning("Input Error", "Please enter both username and password.")
-    root.destroy()
-root = tk.Tk()
-root.title("User Registration")
+def hash_password(password: str) -> str:
+    return hashlib.sha256(password.encode("utf-8")).hexdigest()
 
-# Create and place username label and entry
-username_label = tk.Label(root, text="Enter a username:")
-username_label.pack(pady=5)
-username_entry = tk.Entry(root, width=30)
-username_entry.pack(pady=5)
+def save_user_store(path: str = None):
+    """Persist USER_STORE to CSV file. Overwrites existing file.
+    Each row: username, password_hash
+    """
+    if path is None:
+        path = os.path.join(os.getcwd(), "Users.csv")
+    try:
+        with open(path, "w", newline="", encoding="utf-8") as f:
+            writer = csv.writer(f)
+            for user, pwdhash in USER_STORE.items():
+                writer.writerow([user, pwdhash])
+    except Exception as e:
+        # don't crash the app for persistence errors; show a warning instead
+        print(f"Warning: could not save users to {path}: {e}")
 
-# Create and place password label and entry
-password_label = tk.Label(root, text="Enter a password:")
-password_label.pack(pady=5)
-password_entry = tk.Entry(root, width=30, show="*") # show="*" hides password input
-password_entry.pack(pady=5)
+def load_user_store(path: str = None):
+    if path is None:
+        path = os.path.join(os.getcwd(), "Users.csv")
+    if not os.path.exists(path):
+        return
+    try:
+        with open(path, "r", newline="", encoding="utf-8") as f:
+            reader = csv.reader(f)
+            for row in reader:
+                if not row:
+                    continue
+                user = row[0]
+                pwdhash = row[1] if len(row) > 1 else ""
+                USER_STORE[user] = pwdhash
+    except Exception as e:
+        print(f"Warning: could not load users from {path}: {e}")
 
-# Create and place the register button
-register_button = tk.Button(root, text="Register", command=register_user)
-register_button.pack(pady=10)
-
-# Start the Tkinter event loop
-root.mainloop()
-
-def getHtml():
-    request = req.Request(URL, headers= {"User-Agent": "Mozilla/5.0"})
+def get_html(url: str) -> str:
+    request = req.Request(url, headers={"User-Agent": "Mozilla/5.0"})
     with req.urlopen(request) as response:
-        htmlAsBytes = response.read()
-        html = htmlAsBytes.decode("utf-8")
-        print(html)
-        return html
+        data = response.read()
+        return data.decode("utf-8")
 
-def getInfo(html):
-    global allThings
-    currentIndex = 0
-    while currentIndex >= 0:
+def get_info(html: str):
+    """Parse ingredient triples from html and return list of Ingredient.
+    The parser is defensive: stops when markers are not found.
+    """
+    items = []
+    current_index = 0
+    while True:
         # Find Quantity
-        startIndexQuant = html.find("data-ingredient-quantity=\"true\">", currentIndex)
-        garbage = len("data-ingredient-quantity=\"true\">")
-        endIndexQuant = html.find("</span> <span data-ingredient-unit=\"true\">", startIndexQuant)
-        quantity = html[startIndexQuant + garbage:endIndexQuant]
+        start_q = html.find('data-ingredient-quantity="true">', current_index)
+        if start_q == -1:
+            break
+        start_q += len('data-ingredient-quantity="true">')
+        end_q = html.find('</span>', start_q)
+        if end_q == -1:
+            break
+        quantity = html[start_q:end_q].strip()
 
-        # Find Unit
-        startIndexUnit = html.find("data-ingredient-unit=\"true\">", currentIndex)
-        garbage = len("data-ingredient-unit=\"true\">")
-        endIndexUnit = html.find("</span> <span data-ingredient-name=\"true\">", startIndexUnit)
-        unit = html[startIndexUnit + garbage:endIndexUnit]
+        # Find Unit (expect it after quantity)
+        start_u = html.find('data-ingredient-unit="true">', end_q)
+        if start_u == -1:
+            break
+        start_u += len('data-ingredient-unit="true">')
+        end_u = html.find('</span>', start_u)
+        if end_u == -1:
+            break
+        unit = html[start_u:end_u].strip()
 
-        # Find Ingredient Name
-        startIndexName = html.find("data-ingredient-name=\"true\">", currentIndex)
-        garbage = len("data-ingredient-name=\"true\">")
-        endIndexName = html.find("</span></p>", startIndexName)
-        name = html[startIndexName + garbage:endIndexName]
+        # Find Name
+        start_n = html.find('data-ingredient-name="true">', end_u)
+        if start_n == -1:
+            break
+        start_n += len('data-ingredient-name="true">')
+        end_n = html.find('</span>', start_n)
+        if end_n == -1:
+            break
+        name = html[start_n:end_n].strip()
 
-        currentIndex = endIndexName
-        
-        allThings.append(Ingredients(quantity, unit, name))
-        
+        items.append(Ingredient(quantity, unit, name))
+        current_index = end_n
+
+    return items
+
+def show_register_dialog(parent) -> None:
+    dlg = tk.Toplevel(parent)
+    dlg.title("Register")
+    dlg.grab_set()
+
+    tk.Label(dlg, text="Username:").pack(pady=2)
+    user_ent = tk.Entry(dlg)
+    user_ent.pack(pady=2)
+
+    tk.Label(dlg, text="Password:").pack(pady=2)
+    pass_ent = tk.Entry(dlg, show="*")
+    pass_ent.pack(pady=2)
+
+    def do_register():
+        username = user_ent.get().strip()
+        password = pass_ent.get()
+        if not username or not password:
+            messagebox.showwarning("Input Error", "Please enter both username and password.")
+            return
+        if username in USER_STORE:
+            messagebox.showerror("Error", "Username already exists")
+            return
+        USER_STORE[username] = hash_password(password)
+        messagebox.showinfo("Success", f"Registered {username}")
+        # persist the user store after successful registration
+        try:
+            save_user_store()
+        except Exception:
+            # non-fatal; warn on console
+            print("Warning: failed to save user store after registration")
+        dlg.destroy()
+
+    tk.Button(dlg, text="Register", command=do_register).pack(pady=6)
+    parent.wait_window(dlg)
+
+def show_login_dialog(parent) -> bool:
+    dlg = tk.Toplevel(parent)
+    dlg.title("Login")
+    dlg.grab_set()
+
+    tk.Label(dlg, text="Username:").pack(pady=2)
+    user_ent = tk.Entry(dlg)
+    user_ent.pack(pady=2)
+
+    tk.Label(dlg, text="Password:").pack(pady=2)
+    pass_ent = tk.Entry(dlg, show="*")
+    pass_ent.pack(pady=2)
+
+    result = {"ok": False}
+
+    def do_login():
+        username = user_ent.get().strip()
+        password = pass_ent.get()
+        if username not in USER_STORE:
+            messagebox.showerror("Error", "Invalid Username or Password")
+            return
+        if USER_STORE[username] != hash_password(password):
+            messagebox.showerror("Error", "Invalid Username or Password")
+            return
+        messagebox.showinfo("Success", "Login successful")
+        result["ok"] = True
+        dlg.destroy()
+
+    tk.Button(dlg, text="Login", command=do_login).pack(pady=6)
+    parent.wait_window(dlg)
+    return result["ok"]
 
 def entered():
-    global entryLink, URL
-    URL = entryLink.get()
-    labelListText = labelList.cget("text")
-    getInfo(getHtml())
-    if labelListText != "":
-        labelList.configure(text=labelListText + "\n" + allThings[-1].quantity + " " + allThings[-1].unit + " " + allThings[-1].name)
-    else:
-        labelList.configure(text=allThings[-1].quantity + " " + allThings[-1].unit + " " + allThings[-1].name)
+    global entryLink, labelList, allThings
+    url = entryLink.get().strip()
+    if not url:
+        messagebox.showwarning("Input Error", "Please enter a URL")
+        return
+    try:
+        html = get_html(url)
+    except Exception as e:
+        messagebox.showerror("Network Error", f"Could not fetch URL: {e}")
+        return
 
+    # parse
+    items = get_info(html)
+    if not items:
+        messagebox.showinfo("No ingredients", "No ingredients were found on that page.")
+        return
+
+    # append parsed items to allThings and update label
+    allThings.extend(items)
+    lines = [f"{it.quantity} {it.unit} {it.name}".strip() for it in allThings]
+    labelList.configure(text="\n".join(lines))
     entryLink.delete(0, "end")
 
-def validate_login():
-    username = username_entry.get()
-    password = password_entry.get()
-
-    if username in VALID_USERS and password in PASSWORD:
-        messagebox.showinfo("Success", "Login Successful!")
-        
-    else:
-        messagebox.showerror("Error", "Invalid Username or Password")
-    root.destroy()
-
-root = tk.Tk()
-root.title("Login Form")
-root.geometry("300x200")
-
-username_label = tk.Label(root, text="Username:")
-username_label.pack(pady=5)
-username_entry = tk.Entry(root)
-username_entry.pack(pady=5)
-
-password_label = tk.Label(root, text="Password:")
-password_label.pack(pady=5)
-password_entry = tk.Entry(root, show="*")
-password_entry.pack(pady=5)
-
-login_button = tk.Button(root, text="Login", command=validate_login)
-login_button.pack(pady=10)
-root.mainloop()
 def main():
-    root = tk.Tk()
-    root.title("Login Form")
-    root.geometry("300x200") # Set window size
-    root.destroy()
-    # Create Window
+    # load persisted users (if any)
+    load_user_store()
+
     root = tk.Tk()
     root.title("Grocery List Generator")
-    root.geometry("1000x500")
-    
+    root.geometry("800x400")
 
+    # Ask user to register or login first
+    frame = tk.Frame(root)
+    frame.pack(pady=10)
 
+    tk.Label(frame, text="Please register or login to continue").pack()
+    btn_frame = tk.Frame(frame)
+    btn_frame.pack(pady=6)
 
+    def on_register():
+        show_register_dialog(root)
+
+    def on_login():
+        ok = show_login_dialog(root)
+        if ok:
+            # Destroy auth frame and continue to main UI
+            frame.destroy()
+            build_main_ui(root)
+
+    tk.Button(btn_frame, text="Register", command=on_register).pack(side=tk.LEFT, padx=6)
+    tk.Button(btn_frame, text="Login", command=on_login).pack(side=tk.LEFT, padx=6)
+
+    root.mainloop()
+
+def build_main_ui(root):
+    global entryLink, labelList
     # label for instructions
-    labelInstructions = tk.Label(root, text="Please enter your link")
-    labelInstructions.pack()
+    labelInstructions = tk.Label(root, text="Please enter a link to a recipe page and press Enter")
+    labelInstructions.pack(pady=6)
 
     # textbox for input
-    global entryLink
-    entryLink = tk.Entry(root)
-    entryLink.pack()
+    entryLink = tk.Entry(root, width=80)
+    entryLink.pack(pady=6)
 
     # List
-    global labelList
-    labelList = tk.Label(root, text="")
-    labelList.pack()
+    labelList = tk.Label(root, text="", justify=tk.LEFT, anchor="w")
+    labelList.pack(fill=tk.BOTH, expand=True, padx=10, pady=6)
+
+    root.bind("<Return>", lambda event: entered())
 
 
-    root.bind(("<Return>") ,lambda event:entered())
-
-    # Display Window (will stop the execution of any code after this point until the window is closed)
-    root.mainloop()
-    
-
-main()
+if __name__ == "__main__":
+    main()
