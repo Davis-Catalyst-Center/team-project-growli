@@ -69,6 +69,7 @@ def get_info(html: str):
     current_index = 0
     while True:
         # Find Quantity
+<<<<<<< HEAD
         start_q = html.find('data-ingredient-quantity="true">', current_index)
         if start_q == -1:
             break
@@ -169,6 +170,33 @@ def show_login_dialog(parent) -> bool:
     tk.Button(dlg, text="Login", command=do_login).pack(pady=6)
     parent.wait_window(dlg)
     return result["ok"]
+=======
+        startIndexQuant = html.find("data-ingredient-quantity=\"true\">", currentIndex)
+        if startIndexQuant != -1:
+            garbage = len("data-ingredient-quantity=\"true\">")
+            endIndexQuant = html.find("</span> <span data-ingredient-unit=\"true\">", startIndexQuant)
+            quantity = html[startIndexQuant + garbage:endIndexQuant]
+
+            # Find Unit
+            startIndexUnit = html.find("data-ingredient-unit=\"true\">", currentIndex)
+            garbage = len("data-ingredient-unit=\"true\">")
+            endIndexUnit = html.find("</span> <span data-ingredient-name=\"true\">", startIndexUnit)
+            unit = html[startIndexUnit + garbage:endIndexUnit]
+
+            # Find Ingredient Name
+            startIndexName = html.find("data-ingredient-name=\"true\">", currentIndex)
+            garbage = len("data-ingredient-name=\"true\">")
+            endIndexName = html.find("</span></p>", startIndexName)
+            name = html[startIndexName + garbage:endIndexName]
+
+            currentIndex = endIndexName
+            
+            allThings.append(Ingredients(quantity, unit, name))
+
+        else:
+            currentIndex = startIndexQuant
+        
+>>>>>>> 2923a838e52ddf310f7d3d21435bf153a5e94b9e
 
 def entered():
     global entryLink, labelList, allThings
