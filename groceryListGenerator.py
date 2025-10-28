@@ -237,6 +237,7 @@ def main():
     
 
 
+
     tk.Label(frame, text="Please register or login to continue").pack()
     btnFrame = tk.Frame(frame)
     btnFrame.pack(pady=6)
