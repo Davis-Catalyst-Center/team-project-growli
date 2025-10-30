@@ -1,4 +1,8 @@
 import urllib.request as req
+try:
+    import requests
+except ImportError:
+    requests = None
 
 class Ingredient:
     def __init__(self, quantity, unit, name):
@@ -8,93 +12,103 @@ class Ingredient:
 
 
 def get_html(url: str) -> str:
-    request = req.Request(url, headers={"User-Agent": "Mozilla/5.0"})
-    with req.urlopen(request) as response:
-        data = response.read()
-        return data.decode("utf-8")
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept-Language": "en-US,en;q=0.9",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+        "Referer": url,
+        "Connection": "keep-alive",
+        "DNT": "1",
+    }
+    if requests:
+        resp = requests.get(url, headers=headers, timeout=10)
+        resp.raise_for_status()
+        return resp.text
+    else:
+        request = req.Request(url, headers=headers)
+        with req.urlopen(request) as response:
+            data = response.read()
+            return data.decode("utf-8")
 
 
-def get_info(html: str):
-    """Parse ingredient triples from html and return list of Ingredient.
-    The parser is defensive: stops when markers are not found.
+def get_info(html: str, url: str = None):
     """
-        """
-        Parse ingredient triples from html and return list of Ingredient.
-        Dispatches to a site-specific parser if known, else tries all parsers.
-        """
-        def parse_site1(html):
-            # Original parser for site with data-ingredient-* attributes
-            items = []
-            current_index = 0
-            while True:
-                start_q = html.find('data-ingredient-quantity="true">', current_index)
-                if start_q == -1:
-                    break
-                start_q += len('data-ingredient-quantity="true">')
-                end_q = html.find('</span>', start_q)
-                if end_q == -1:
-                    break
-                quantity = html[start_q:end_q].strip()
+    Parse ingredient triples from html and return list of Ingredient.
+    Dispatches to a site-specific parser if known, else tries all parsers.
+    """
+    def parse_site1(html):
+        # Original parser for site with data-ingredient-* attributes
+        items = []
+        current_index = 0
+        while True:
+            start_q = html.find('data-ingredient-quantity="true">', current_index)
+            if start_q == -1:
+                break
+            start_q += len('data-ingredient-quantity="true">')
+            end_q = html.find('</span>', start_q)
+            if end_q == -1:
+                break
+            quantity = html[start_q:end_q].strip()
 
-                start_u = html.find('data-ingredient-unit="true">', end_q)
-                if start_u == -1:
-                    break
-                start_u += len('data-ingredient-unit="true">')
-                end_u = html.find('</span>', start_u)
-                if end_u == -1:
-                    break
-                unit = html[start_u:end_u].strip()
+            start_u = html.find('data-ingredient-unit="true">', end_q)
+            if start_u == -1:
+                break
+            start_u += len('data-ingredient-unit="true">')
+            end_u = html.find('</span>', start_u)
+            if end_u == -1:
+                break
+            unit = html[start_u:end_u].strip()
 
-                start_n = html.find('data-ingredient-name="true">', end_u)
-                if start_n == -1:
-                    break
-                start_n += len('data-ingredient-name="true">')
-                end_n = html.find('</span>', start_n)
-                if end_n == -1:
-                    break
-                name = html[start_n:end_n].strip()
+            start_n = html.find('data-ingredient-name="true">', end_u)
+            if start_n == -1:
+                break
+            start_n += len('data-ingredient-name="true">')
+            end_n = html.find('</span>', start_n)
+            if end_n == -1:
+                break
+            name = html[start_n:end_n].strip()
 
-                items.append(Ingredient(quantity, unit, name))
-                current_index = end_n
-            return items
+            items.append(Ingredient(quantity, unit, name))
+            current_index = end_n
+        return items
 
-        def parse_site2(html):
-            # Example: Allrecipes.com style (li class="ingredients-item")
-            import re
-            items = []
-            pattern = re.compile(r'<li[^>]*class="[^"]*ingredients-item[^"]*"[^>]*>(.*?)</li>', re.DOTALL)
-            for match in pattern.finditer(html):
-                li = match.group(1)
-                # Try to extract quantity, unit, name from text
-                text = re.sub(r'<[^>]+>', '', li).strip()
-                # Naive split: e.g. "1 cup sugar" -> [1, cup, sugar]
-                parts = text.split()
-                if len(parts) >= 3:
-                    quantity, unit = parts[0], parts[1]
-                    name = ' '.join(parts[2:])
-                elif len(parts) == 2:
-                    quantity, unit = parts[0], ''
-                    name = parts[1]
-                elif len(parts) == 1:
-                    quantity, unit, name = '', '', parts[0]
-                else:
-                    continue
-                items.append(Ingredient(quantity, unit, name))
-            return items
+    def parse_site2(html):
+        # Example: Allrecipes.com style (li class="ingredients-item")
+        import re
+        items = []
+        pattern = re.compile(r'<li[^>]*class="[^\"]*ingredients-item[^\"]*"[^>]*>(.*?)</li>', re.DOTALL)
+        for match in pattern.finditer(html):
+            li = match.group(1)
+            # Try to extract quantity, unit, name from text
+            text = re.sub(r'<[^>]+>', '', li).strip()
+            # Naive split: e.g. "1 cup sugar" -> [1, cup, sugar]
+            parts = text.split()
+            if len(parts) >= 3:
+                quantity, unit = parts[0], parts[1]
+                name = ' '.join(parts[2:])
+            elif len(parts) == 2:
+                quantity, unit = parts[0], ''
+                name = parts[1]
+            elif len(parts) == 1:
+                quantity, unit, name = '', '', parts[0]
+            else:
+                continue
+            items.append(Ingredient(quantity, unit, name))
+        return items
 
-        # Add more site-specific parsers as needed
+    # Add more site-specific parsers as needed
 
-        # Dispatch based on URL or HTML signature
-        if url:
-            if 'allrecipes.' in url:
-                items = parse_site2(html)
-                if items:
-                    return items
-            # Add more site checks here
-
-        # Try all known parsers, return first with results
-        for parser in [parse_site1, parse_site2]:
-            items = parser(html)
+    # Dispatch based on URL or HTML signature
+    if url:
+        if 'allrecipes.' in url:
+            items = parse_site2(html)
             if items:
                 return items
-        return []
+        # Add more site checks here
+
+    # Try all known parsers, return first with results
+    for parser in [parse_site1, parse_site2]:
+        items = parser(html)
+        if items:
+            return items
+    return []
