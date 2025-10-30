@@ -183,7 +183,11 @@ def entered():
         return
 
     # parse
+<<<<<<< HEAD
     items = getInfo(html)
+=======
+    items = get_info(html, url)
+>>>>>>> 407c58128171a6a97b21facd83496689b02d90d0
     if not items:
         messagebox.showinfo("No ingredients", "No ingredients were found on that page.")
         return
@@ -243,4 +247,4 @@ def buildMainUi(root):
 
 
 if __name__ == "__main__":
-    main()
+    main()es
