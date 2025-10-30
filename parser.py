@@ -96,7 +96,30 @@ def get_info(html: str, url: str = None):
             items.append(Ingredient(quantity, unit, name))
         return items
 
-    # Add more site-specific parsers as needed
+
+    def parse_site3(html):
+        # tastesbetterfromscratch.com style (li class="wprm-recipe-ingredient")
+        import re
+        items = []
+        pattern = re.compile(r'<li[^>]*class="[^"]*wprm-recipe-ingredient[^"]*"[^>]*>(.*?)</li>', re.DOTALL)
+        for match in pattern.finditer(html):
+            li = match.group(1)
+            # Extract amount, unit, name
+            amount = ''
+            unit = ''
+            name = ''
+            m_amount = re.search(r'<span[^>]*class="[^"]*wprm-recipe-ingredient-amount[^"]*"[^>]*>(.*?)</span>', li)
+            if m_amount:
+                amount = m_amount.group(1).strip()
+            m_unit = re.search(r'<span[^>]*class="[^"]*wprm-recipe-ingredient-unit[^"]*"[^>]*>(.*?)</span>', li)
+            if m_unit:
+                unit = m_unit.group(1).strip()
+            m_name = re.search(r'<span[^>]*class="[^"]*wprm-recipe-ingredient-name[^"]*"[^>]*>(.*?)</span>', li)
+            if m_name:
+                name = m_name.group(1).strip()
+            if name:
+                items.append(Ingredient(amount, unit, name))
+        return items
 
     # Dispatch based on URL or HTML signature
     if url:
@@ -104,10 +127,14 @@ def get_info(html: str, url: str = None):
             items = parse_site2(html)
             if items:
                 return items
+        if 'tastesbetterfromscratch.' in url:
+            items = parse_site3(html)
+            if items:
+                return items
         # Add more site checks here
 
     # Try all known parsers, return first with results
-    for parser in [parse_site1, parse_site2]:
+    for parser in [parse_site1, parse_site2, parse_site3]:
         items = parser(html)
         if items:
             return items
