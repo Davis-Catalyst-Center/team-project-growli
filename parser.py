@@ -117,6 +117,9 @@ def get_info(html: str, url: str = None):
             m_name = re.search(r'<span[^>]*class="[^"]*wprm-recipe-ingredient-name[^"]*"[^>]*>(.*?)</span>', li)
             if m_name:
                 name = m_name.group(1).strip()
+                # Remove any HTML tags from name
+                import re as _re
+                name = _re.sub(r'<[^>]+>', '', name)
             if name:
                 items.append(Ingredient(amount, unit, name))
         return items
