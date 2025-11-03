@@ -22,7 +22,7 @@ def getHtml(url: str) -> str:
     }
     if requests:
         resp = requests.get(url, headers=headers, timeout=10)
-        resp.raiseForStatus()
+        resp.raise_for_status()
         return resp.text
     else:
         request = req.Request(url, headers=headers)

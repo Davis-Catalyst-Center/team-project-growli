@@ -4,6 +4,8 @@ import hashlib
 import urllib.request as req
 import tkinter as tk
 from tkinter import messagebox
+from fractions import Fraction
+import re
 
 URL = ""
 
@@ -141,7 +143,8 @@ def entered():
 
     # append parsed items to allThings and update label
     allThings.extend(items)
-    lines = [f"{it.quantity} {it.unit} {it.name}".strip() for it in allThings]
+    combined = combine_ingredients(allThings)
+    lines = [f"{it.quantity} {it.unit} {it.name}".strip() for it in combined]
     labelList.configure(text="\n".join(lines))
     entryLink.delete(0, "end")
 
