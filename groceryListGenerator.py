@@ -21,7 +21,7 @@ from parser import Ingredient, getHtml, getInfo
 USER_STORE = {}
 
 def hashPassword(password: str) -> str:
-    return hashlib.sha256(password.encode("utf-8")).hexdigest()
+    return hashPassword(password)
 
 <<<<<<< HEAD
 def normalizeName(name: str) -> str:
@@ -168,19 +168,7 @@ def save_user_store(path: str = None):
 =======
 def saveUserStore(path: str = None):
 >>>>>>> 63e6bf9aabc3c395f75b8c9e94665bf2ca8c8600
-    """Persist USER_STORE to CSV file. Overwrites existing file.
-    Each row: username, password_hash
-    """
-    if path is None:
-        path = os.path.join(os.getcwd(), "Users.csv")
-    try:
-        with open(path, "w", newline="", encoding="utf-8") as f:
-            writer = csv.writer(f)
-            for user, pwdhash in USER_STORE.items():
-                writer.writerow([user, pwdhash])
-    except Exception as e:
-        # don't crash the app for persistence errors; show a warning instead
-        print(f"Warning: could not save users to {path}: {e}")
+    return saveUserStore(path)
 
 def loadUserStore(path: str = None):
     if path is None:
@@ -289,7 +277,7 @@ def entered():
 
     # append parsed items to allThings and update label
     allThings.extend(items)
-    combined = combine_ingredients(allThings)
+        combined = combineIngredients(allThings)
     lines = [f"{it.quantity} {it.unit} {it.name}".strip() for it in combined]
     labelList.configure(text="\n".join(lines))
     entryLink.delete(0, "end")
