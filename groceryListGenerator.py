@@ -24,10 +24,6 @@ def hashPassword(password: str) -> str:
     return hashPassword(password)
 
 def saveUserStore(path: str = None):
->>>>>>> 63e6bf9aabc3c395f75b8c9e94665bf2ca8c8600
-    """Persist USER_STORE to CSV file. Overwrites existing file.
-    Each row: username, password_hash
-    """
     if path is None:
         path = os.path.join(os.getcwd(), "Users.csv")
     try:
@@ -55,6 +51,8 @@ def loadUserStore(path: str = None):
                 USER_STORE[user] = pwdhash
     except Exception as e:
         print(f"Warning: could not load users from {path}: {e}")
+
+
 
 
 def showRegisterDialog(parent) -> None:
