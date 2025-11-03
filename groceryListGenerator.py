@@ -24,7 +24,6 @@ def hashPassword(password: str) -> str:
     return hashPassword(password)
 
 def saveUserStore(path: str = None):
->>>>>>> 63e6bf9aabc3c395f75b8c9e94665bf2ca8c8600
     """Persist USER_STORE to CSV file. Overwrites existing file.
     Each row: username, password_hash
     """
@@ -144,7 +143,7 @@ def entered():
 
     # append parsed items to allThings and update label
     allThings.extend(items)
-        combined = combineIngredients(allThings)
+    combined = combineIngredients(allThings)
     lines = [f"{it.quantity} {it.unit} {it.name}".strip() for it in combined]
     labelList.configure(text="\n".join(lines))
     entryLink.delete(0, "end")
