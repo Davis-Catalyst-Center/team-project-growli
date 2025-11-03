@@ -54,8 +54,6 @@ def loadUserStore(path: str = None):
         print(f"Warning: could not load users from {path}: {e}")
 
 
-
-
 def showRegisterDialog(parent) -> None:
     dlg = tk.Toplevel(parent)
     dlg.title("Register")
