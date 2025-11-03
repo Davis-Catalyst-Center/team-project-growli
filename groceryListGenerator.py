@@ -21,7 +21,7 @@ from parser import Ingredient, getHtml, getInfo
 USER_STORE = {}
 
 def hashPassword(password: str) -> str:
-    return hashPassword(password)
+    return hashlib.sha256(password.encode("utf-8")).hexdigest()
 
 def saveUserStore(path: str = None):
     if path is None:
