@@ -84,7 +84,7 @@ def show_register_dialog(parent) -> None:
         messagebox.showinfo("Success", f"Registered {username}")
         # persist the user store after successful registration
         try:
-            save_user_store()
+            saveUserStore()
         except Exception:
             # non-fatal; warn on console
             print("Warning: failed to save user store after registration")
@@ -146,7 +146,7 @@ def entered():
 
     # append parsed items to allThings and update label
     allThings.extend(items)
-    combined = combine_ingredients(allThings)
+    combined = combineIngredients(allThings)
     lines = [f"{it.quantity} {it.unit} {it.name}".strip() for it in combined]
     labelList.configure(text="\n".join(lines))
     entryLink.delete(0, "end")
