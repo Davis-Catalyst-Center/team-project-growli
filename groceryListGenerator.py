@@ -21,12 +21,15 @@ from parser import Ingredient, getHtml, getInfo
 USER_STORE = {}
 
 def hashPassword(password: str) -> str:
-    return hashPassword(password)
+    return hashlib.sha256(password.encode("utf-8")).hexdigest()
 
 def saveUserStore(path: str = None):
+<<<<<<< HEAD
     """Persist USER_STORE to CSV file. Overwrites existing file.
     Each row: username, password_hash
     """
+=======
+>>>>>>> 56702a12e21978475e2bec614a0c097c74e9ab2f
     if path is None:
         path = os.path.join(os.getcwd(), "Users.csv")
     try:
@@ -54,6 +57,8 @@ def loadUserStore(path: str = None):
                 USER_STORE[user] = pwdhash
     except Exception as e:
         print(f"Warning: could not load users from {path}: {e}")
+
+
 
 
 def showRegisterDialog(parent) -> None:
