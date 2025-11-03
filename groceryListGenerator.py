@@ -142,7 +142,7 @@ def entered():
 
     # append parsed items to allThings and update label
     allThings.extend(items)
-        combined = combineIngredients(allThings)
+    combined = combineIngredients(allThings)
     lines = [f"{it.quantity} {it.unit} {it.name}".strip() for it in combined]
     labelList.configure(text="\n".join(lines))
     entryLink.delete(0, "end")
