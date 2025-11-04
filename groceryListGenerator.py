@@ -18,7 +18,7 @@ allThings = []
 
 # Parsing lives in a separate module to make it easy to test without importing tkinter
 
-from parser import Ingredient, getHtml, getInfo
+from parser_1 import Ingredient, getHtml, getInfo
 
 # Simple in-memory user store: username -> password_hash
 USER_STORE = {}
@@ -372,18 +372,16 @@ def entered():
 
     # append parsed items to allThings and update label
     allThings.extend(items)
-    combined = combine_ingredients(allThings)
+    alphabetizedThings = alphabetizeList(allThings)
+    combined = combine_ingredients(alphabetizedThings)
     lines = [f"{it.quantity} {it.unit} {it.name}".strip() for it in combined]
-    alphabetizedList = alphabetizeList(lines)
-    labelList.configure(text="\n".join(alphabetizedList))
+    labelList.configure(text="\n".join(lines))
     entryLink.delete(0, "end")
 
 
-def getAlphaPart(thing):
-    return ''.join(char for char in str(thing) if char.isalpha()).lower()
-
 def alphabetizeList(list):
-    return sorted(list, key=getAlphaPart)
+    return sorted(list, key=lambda ingredient: ingredient.name.lower())
+
 
 def main():
     # load persisted users (if any)
