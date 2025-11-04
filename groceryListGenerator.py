@@ -172,7 +172,7 @@ def canonicalize_name(name: str) -> str:
             return canon
     blacklist = [
         "boneless", "skinless", "dry", "fresh", "extra",
-        "low-sodium", "large", "small", "medium", "freshly", "ground", "sliced", "pieces", "breasts", "breast", "noodles"
+        "low-sodium", "large", "small", "medium", "freshly", "ground", "sliced", "pieces", "breasts", "breast", "noodles", "beat", "beaten"
     ]
     for word in blacklist:
         n = n.replace(word, "")
