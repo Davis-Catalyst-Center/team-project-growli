@@ -7,9 +7,6 @@ from tkinter import messagebox
 from fractions import Fraction
 import re
 
-# NOTE: if you need to set DISPLAY for headless environments, set it outside the script.
-# os.environ["DISPLAY"] = ":0"
-
 URL = ""
 
 entryLink = None
