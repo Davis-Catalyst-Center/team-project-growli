@@ -5,10 +5,11 @@ except ImportError:
     requests = None
 
 class Ingredient:
-    def __init__(self, quantity, unit, name):
+    def __init__(self, quantity, unit, name, url=""):
         self.quantity = quantity
         self.unit = unit
         self.name = name
+        self.url = url
 
 
 def getHtml(url: str) -> str:
@@ -68,7 +69,7 @@ def getInfo(html: str, url: str = None):
                 break
             name = html[startN:endN].strip()
 
-            items.append(Ingredient(quantity, unit, name))
+            items.append(Ingredient(quantity, unit, name, url))
             currentIndex = endN
         return items
 
@@ -93,7 +94,7 @@ def getInfo(html: str, url: str = None):
                 quantity, unit, name = '', '', parts[0]
             else:
                 continue
-            items.append(Ingredient(quantity, unit, name))
+            items.append(Ingredient(quantity, unit, name, url))
         return items
 
 
@@ -121,7 +122,7 @@ def getInfo(html: str, url: str = None):
                 import re as _re
                 name = _re.sub(r'<[^>]+>', '', name)
             if name:
-                items.append(Ingredient(amount, unit, name))
+                items.append(Ingredient(amount, unit, name, url))
         return items
 
     # Dispatch based on URL or HTML signature

@@ -12,6 +12,8 @@ URL = ""
 entryLink = None
 labelList = None
 allThings = []
+allLinks = []
+buttons = []
 
 # Parsing lives in a separate module to make it easy to test without importing tkinter
 
@@ -349,7 +351,7 @@ def show_login_dialog(parent) -> bool:
     return result["ok"]
 
 def entered():
-    global entryLink, labelList, allThings
+    global entryLink, labelList, allThings, allLinks
     url = entryLink.get().strip()
     if not url:
         messagebox.showwarning("Input Error", "Please enter a URL")
@@ -369,12 +371,60 @@ def entered():
 
     # append parsed items to allThings and update label
     allThings.extend(items)
+    allLinks.append(url)
+
+    makeButton()
+    displayButtons()
     alphabetizedThings = alphabetizeList(allThings)
     combined = combine_ingredients(alphabetizedThings)
     lines = [f"{it.quantity} {it.unit} {it.name}".strip() for it in combined]
     labelList.configure(text="\n".join(lines))
     entryLink.delete(0, "end")
 
+def linkButtonClicked(buttonUrl):
+    global allLinks
+    # Remove the items associated with the URL, then remove the URL
+    itemsToRemove = []
+    for i in range(len(allThings)):
+        if allThings[i].url == buttonUrl:
+            itemsToRemove.append(allThings[i])
+   
+    for item in itemsToRemove:
+        allThings.remove(item)
+
+    for link in allLinks:
+        if link == buttonUrl:
+            allLinks.remove(buttonUrl)
+
+    # Update everything so the display is up to date
+    removeButton(buttonUrl)
+    makeButton()
+    displayButtons()
+    alphabetizedThings = alphabetizeList(allThings)
+    combined = combine_ingredients(alphabetizedThings)
+    lines = [f"{it.quantity} {it.unit} {it.name}".strip() for it in combined]
+    labelList.configure(text="\n".join(lines))
+
+
+def removeButton(removeUrl):
+    for button in buttons:
+        if removeUrl == button['text']:
+            button.pack_forget()
+            button.destroy()
+
+def makeButton():
+    global buttons
+    for button in buttons:
+        button.pack_forget()
+        button.destroy()
+    buttons = []
+    for i in range(len(allLinks)):
+        buttonText = allLinks[i]
+        buttons.append(tk.Button(text=buttonText, command=lambda:linkButtonClicked(buttonText)))
+
+def displayButtons():
+    for button in buttons:
+        button.pack(pady=6)
 
 def alphabetizeList(list):
     return sorted(list, key=lambda ingredient: ingredient.name.lower())
@@ -424,6 +474,7 @@ def build_main_ui(root):
     # List
     labelList = tk.Label(root, text="", justify=tk.LEFT, anchor="w")
     labelList.pack(fill=tk.BOTH, expand=True, padx=10, pady=6)
+    
 
     root.bind("<Return>", lambda event: entered())
 
