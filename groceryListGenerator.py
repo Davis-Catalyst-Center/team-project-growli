@@ -392,9 +392,7 @@ def linkButtonClicked(buttonUrl):
     for item in itemsToRemove:
         allThings.remove(item)
 
-    for link in allLinks:
-        if link == buttonUrl:
-            allLinks.remove(buttonUrl)
+    allLinks = [link for link in allLinks if link != buttonUrl]
 
     # Update everything so the display is up to date
     removeButton(buttonUrl)
