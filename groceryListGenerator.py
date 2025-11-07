@@ -1,4 +1,28 @@
 
+import os
+import csv
+import hashlib
+import urllib.request as req
+import tkinter as tk
+from tkinter import messagebox
+from fractions import Fraction
+import re
+
+# NOTE: if you need to set DISPLAY for headless environments, set it outside the script.
+# os.environ["DISPLAY"] = ":0"
+
+URL = ""
+
+entryLink = None
+labelList = None
+allThings = []
+allLinks = []
+buttons = []
+
+# Parsing lives in a separate module to make it easy to test without importing tkinter
+
+from parser_1 import Ingredient, getHtml, getInfo
+
 # --- Generalized ingredient normalization and combining ---
 import difflib
 
@@ -150,30 +174,6 @@ def combineIngredients(items: list) -> list:
         )
         for key in agg
     ]
-import os
-import csv
-import hashlib
-import urllib.request as req
-import tkinter as tk
-from tkinter import messagebox
-from fractions import Fraction
-import re
-
-# NOTE: if you need to set DISPLAY for headless environments, set it outside the script.
-# os.environ["DISPLAY"] = ":0"
-
-URL = ""
-
-entryLink = None
-labelList = None
-allThings = []
-allLinks = []
-buttons = []
-
-# Parsing lives in a separate module to make it easy to test without importing tkinter
-
-from parser_1 import Ingredient, getHtml, getInfo
-
 # Simple in-memory user store: username -> password_hash
 USER_STORE = {}
 
