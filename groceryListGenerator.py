@@ -23,146 +23,11 @@ from parser import Ingredient, getHtml, getInfo
 # Simple in-memory user store: username -> password_hash
 USER_STORE = {}
 
-def hash_password(password: str) -> str:
-    return hashlib.sha256(password.encode("utf-8")).hexdigest()
+def hashPassword(password: str) -> str:
+    return hashPassword(password)
 
-def normalize_name(name: str) -> str:
-    if not name:
-        return ""
-    n = name.lower()
-    n = re.sub(r"\(.*?)", "", n) 
-    n = re.sub(r"[^a-z0-9\s]", "", n)
-    n = re.sub(r"\s+", " ", n).strip()
-    return n
-
-unitMap = {
-    # canonical : [aliases]
-    'teaspoon': ['teaspoon', 'teaspoons', 'tsp', 'tsps', 't'],
-    'tablespoon': ['tablespoon', 'tablespoons', 'tbsp', 'tbsps', 'tbl', 'tbls', 'T'],
-    'cup': ['cup', 'cups'],
-    'ounce': ['ounce', 'ounces', 'oz', 'oz.'],
-    'pint': ['pint', 'pints', 'pt', 'pts'],
-    'quart': ['quart', 'quarts', 'qt', 'qts'],
-    'gallon': ['gallon', 'gallons', 'gal', 'gals'],
-    'pound': ['pound', 'pounds', 'lb', 'lbs'],
-    'gram': ['gram', 'grams', 'g', 'gs'],
-    'kilogram': ['kilogram', 'kilograms', 'kg', 'kgs'],
-    'milliliter': ['milliliter', 'milliliters', 'ml', 'mls'],
-    'liter': ['liter', 'liters', 'l', 'ls'],
-    'pinch': ['pinch', 'pinches'],
-    'dash': ['dash', 'dashes'],
-    'clove': ['clove', 'cloves'],
-    'can': ['can', 'cans'],
-    'package': ['package', 'packages', 'pkg', 'pkgs'],
-    'stick': ['stick', 'sticks'],
-    'slice': ['slice', 'slices'],
-    'piece': ['piece', 'pieces'],
-    'filet': ['filet', 'filets'],
-    'bag': ['bag', 'bags'],
-    'bunch': ['bunch', 'bunches'],
-    'head': ['head', 'heads'],
-    'rib': ['rib', 'ribs'],
-    'sprig': ['sprig', 'sprigs'],
-    'leaf': ['leaf', 'leaves'],
-    'large': ['large'],
-    'small': ['small'],
-    'medium': ['medium'],
-}
-
-unitCanonical = {alias: canon for canon, aliases in unitMap.items() for alias in aliases}
-
-def normalize_unit(unit: str) -> str:
-    if not unit:
-        return ""
-    u = unit.lower().strip().replace('.', '')
-    u = re.sub(r"[^a-z]", "", u)
-    return unitCanonical.get(u, u)
-
-
-def parse_quantity(q: str) -> Fraction | None:
-    if not q:
-        return None
-    s = q.strip()
-    if not s:
-        return None
-    # replace unicode fractions
-    uni = {'½':'1/2','¼':'1/4','¾':'3/4','⅓':'1/3','⅔':'2/3','⅛':'1/8'}
-    for k,v in uni.items():
-        s = s.replace(k, v)
-    # replace hyphens with space
-    s = s.replace('-', ' ')
-    parts = s.split()
-    total = Fraction(0)
-    for part in parts:
-        try:
-            if '/' in part:
-                total += Fraction(part)
-            else:
-                # try integer then float
-                try:
-                    total += Fraction(int(part))
-                except Exception:
-                    total += Fraction(float(part))
-        except Exception:
-            # not a number (e.g., 'to', 'taste') -> cannot parse
-            return None
-    return total
-
-
-def format_quantity(frac: Fraction) -> str:
-    if frac is None:
-        return ""
-    if frac == 0:
-        return "0"
-    if frac.denominator == 1:
-        return str(frac.numerator)
-    whole = frac.numerator // frac.denominator
-    rem = Fraction(frac.numerator % frac.denominator, frac.denominator)
-    if whole:
-        if rem:
-            return f"{whole} {rem}"
-        return str(whole)
-    return str(rem)
-
-
-def combine_ingredients(items: list) -> list:
-    """Combine ingredients with same normalized name and unit, summing quantities when numeric.
-    Non-numeric quantities are appended as separate entries if they cannot be parsed.
-    """
-    agg = {}
-    non_numeric = []
-    for it in items:
-        name_key = normalize_name(it.name)
-        unit_key = normalize_unit(it.unit)
-        qty = parse_quantity(it.quantity)
-        if qty is None:
-            non_numeric.append((name_key, unit_key, it))
-            continue
-        key = (name_key, unit_key)
-        if key not in agg:
-            agg[key] = {'qty': Fraction(0), 'unit': it.unit, 'display_name': it.name}
-        agg[key]['qty'] += qty
-        if len(it.name) > len(agg[key]['display_name']):
-            agg[key]['display_name'] = it.name
-
-    results = []
-    for (name_key, unit_key), data in agg.items():
-        qstr = format_quantity(data['qty'])
-        results.append(type(it)(qstr, data['unit'], data['display_name']))
-
-    seen = {}
-    for name_key, unit_key, it in non_numeric:
-        key = (name_key, unit_key)
-        if key not in seen:
-            seen[key] = it
-        else:
-            prev = seen[key]
-            prev.name = prev.name + "; " + it.name
-    results.extend(seen.values())
-    return results
-
-
-def save_user_store(path: str = None):
+def saveUserStore(path: str = None):
+>>>>>>> 63e6bf9aabc3c395f75b8c9e94665bf2ca8c8600
     """Persist USER_STORE to CSV file. Overwrites existing file.
     Each row: username, password_hash
     """
@@ -285,7 +150,7 @@ def entered():
 
     # append parsed items to allThings and update label
     allThings.extend(items)
-    combined = combine_ingredients(allThings)
+        combined = combineIngredients(allThings)
     lines = [f"{it.quantity} {it.unit} {it.name}".strip() for it in combined]
     labelList.configure(text="\n".join(lines))
     entryLink.delete(0, "end")
