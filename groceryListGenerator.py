@@ -418,7 +418,7 @@ def makeButton():
     buttons = []
     for i in range(len(allLinks)):
         buttonText = allLinks[i]
-        buttons.append(tk.Button(text=buttonText, command=lambda:linkButtonClicked(buttonText)))
+        buttons.append(tk.Button(text=buttonText, command=lambda t=buttonText: linkButtonClicked(t)))
 
 def displayButtons():
     for button in buttons:
