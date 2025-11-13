@@ -241,7 +241,7 @@ def show_register_dialog(parent) -> None:
         messagebox.showinfo("Success", f"Registered {username}")
         # persist the user store after successful registration
         try:
-            save_user_store()
+            saveUserStore()
         except Exception:
             # non-fatal; warn on console
             print("Warning: failed to save user store after registration")
@@ -326,7 +326,7 @@ def linkButtonClicked(buttonUrl):
     makeButton()
     displayButtons()
     alphabetizedThings = alphabetizeList(allThings)
-    combined = combine_ingredients(alphabetizedThings)
+    combined = combineIngredients(alphabetizedThings)
     lines = [f"{it.quantity} {it.unit} {it.name}".strip() for it in combined]
     labelList.configure(text="\n".join(lines))
 
