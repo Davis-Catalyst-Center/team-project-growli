@@ -1,3 +1,25 @@
+import os
+import csv
+import hashlib
+import urllib.request as req
+import tkinter as tk
+from tkinter import messagebox
+import re
+
+URL = ""
+
+entryLink = None
+labelList = None
+allThings = []
+allLinks = []
+buttons = []
+
+# Parsing lives in a separate module to make it easy to test without importing tkinter
+
+from parser_1 import Ingredient, getHtml, getInfo
+
+# Simple in-memory user store: username -> password_hash
+USER_STORE = {}
 from fractions import Fraction
 # --- Generalized ingredient normalization and combining ---
 import difflib
@@ -120,6 +142,7 @@ def convert_unit(qty, from_unit, to_unit):
         return qty * unit_conversions[key]
     return None
 
+# This function doesn't do anything?
 def get_canonical_unit(name_key, unit_key):
     # For now, just use the most common unit among all items with this name
     # Could be improved with a static map or more logic
@@ -151,31 +174,7 @@ def combineIngredients(items: list) -> list:
         )
         for key in agg
     ]
-import os
-import csv
-import hashlib
-import urllib.request as req
-import tkinter as tk
-from tkinter import messagebox
-import re
 
-# NOTE: if you need to set DISPLAY for headless environments, set it outside the script.
-# os.environ["DISPLAY"] = ":0"
-
-URL = ""
-
-entryLink = None
-labelList = None
-allThings = []
-allLinks = []
-buttons = []
-
-# Parsing lives in a separate module to make it easy to test without importing tkinter
-
-from parser_1 import Ingredient, getHtml, getInfo
-
-# Simple in-memory user store: username -> password_hash
-USER_STORE = {}
 
 def hash_password(password: str) -> str:
     return hashlib.sha256(password.encode("utf-8")).hexdigest()
