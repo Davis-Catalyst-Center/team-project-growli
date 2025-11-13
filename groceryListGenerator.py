@@ -1,4 +1,4 @@
-
+from fractions import Fraction
 # --- Generalized ingredient normalization and combining ---
 import difflib
 
@@ -156,7 +156,6 @@ import hashlib
 import urllib.request as req
 import tkinter as tk
 from tkinter import messagebox
-from fractions import Fraction
 import re
 
 # NOTE: if you need to set DISPLAY for headless environments, set it outside the script.
