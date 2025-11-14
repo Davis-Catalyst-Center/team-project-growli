@@ -4,6 +4,7 @@ import hashlib
 import urllib.request as req
 import tkinter as tk
 from tkinter import messagebox
+from fractions import Fraction
 import re
 
 URL = ""
@@ -20,10 +21,20 @@ from parser_1 import Ingredient, getHtml, getInfo
 
 # Simple in-memory user store: username -> password_hash
 USER_STORE = {}
-from fractions import Fraction
-# --- Generalized ingredient normalization and combining ---
-import difflib
 
+def hash_password(password: str) -> str:
+    return hashlib.sha256(password.encode("utf-8")).hexdigest()
+
+def normalize_name(name: str) -> str:
+    if not name:
+        return ""
+    n = name.lower()
+    n = re.sub(r"\(.*?\)", "", n) 
+    n = re.sub(r"[^a-z0-9\s]", "", n)
+    n = re.sub(r"\s+", " ", n).strip()
+    return n
+
+# Expanded unit map for robust normalization
 unitMap = {
     'teaspoon': ['teaspoon', 'teaspoons', 'tsp', 'tsps', 't', 'tsp.', 'tsps.'],
     'tablespoon': ['tablespoon', 'tablespoons', 'tbsp', 'tbsps', 'tbl', 'tbls', 'T', 'tbsp.', 'tbsps.', 'tbl.', 'tbls.'],
@@ -39,60 +50,55 @@ unitMap = {
     'liter': ['liter', 'liters', 'l', 'ls', 'l.', 'ls.'],
     'pinch': ['pinch', 'pinches'],
     'dash': ['dash', 'dashes'],
+    'clove': ['clove', 'cloves'],
+    'can': ['can', 'cans'],
+    'package': ['package', 'packages', 'pkg', 'pkgs', 'pkg.', 'pkgs.'],
+    'stick': ['stick', 'sticks'],
+    'slice': ['slice', 'slices'],
+    'piece': ['piece', 'pieces'],
+    'filet': ['filet', 'filets'],
+    'bag': ['bag', 'bags'],
+    'bunch': ['bunch', 'bunches'],
+    'head': ['head', 'heads'],
+    'rib': ['rib', 'ribs'],
+    'sprig': ['sprig', 'sprigs'],
+    'leaf': ['leaf', 'leaves'],
+    'large': ['large'],
+    'small': ['small'],
+    'medium': ['medium'],
+}
+unit_conversions = {
+    ("lb", "oz"): 16,
+    ("oz", "lb"): 1/16,
+    ("cup", "oz"): 8,      # for cheese, butter, etc. (approximate)
+    ("oz", "cup"): 1/8,
+    ("tbsp", "tsp"): 3,
+    ("tsp", "tbsp"): 1/3,
+    ("cup", "tbsp"): 16,
+    ("tbsp", "cup"): 1/16,
+    ("cup", "ml"): 237,
+    ("ml", "cup"): 1/237,
+    ("quart", "cup"): 4,
+    ("cup", "quart"): 1/4,
+    ("pint", "cup"): 2,
+    ("cup", "pint"): 1/2,
+    ("gallon", "quart"): 4,
+    ("quart", "gallon"): 1/4,
+    ("pound", "oz"): 16,
+    ("oz", "pound"): 1/16,
 }
 unitCanonical = {alias: canon for canon, aliases in unitMap.items() for alias in aliases}
-unit_conversions = {
-    ("tbsp", "cup"): 1/16,
-    ("cup", "tbsp"): 16,
-    ("tsp", "tbsp"): 1/3,
-    ("tbsp", "tsp"): 3,
-    ("oz", "cup"): 1/8,
-    ("cup", "oz"): 8,
-    ("oz", "tbsp"): 2,
-    ("tbsp", "oz"): 1/2,
-}
 
 def normalize_unit(unit: str) -> str:
     if not unit:
         return ""
     u = unit.lower().strip().replace('.', '')
     u = re.sub(r"[^a-z ]", "", u)
+    u = u.replace('fluid ounce', 'fl oz')  # handle 'fluid ounce' as 'fl oz'
+    u = u.replace('fl oz', 'fl oz')
+    u = u.strip()
     return unitCanonical.get(u, u)
 
-# Note: Code does not currently work
-def canonicalize_name(name: str) -> str:
-    n = name.lower()
-    n = re.sub(r"\(.*?\)", "", n)
-    n = re.sub(r"[^a-z0-9\s]", "", n)
-    descriptors = [
-        "boneless", "skinless", "dry", "fresh", "extra", "low-sodium", "large", "small", "medium", "freshly", "ground", "sliced", "pieces", "breasts", "breast", "noodles", "cut into", "cubed", "diced", "chopped", "minced", "shredded", "grated", "crushed", "peeled", "seeded", "halved", "quartered", "rinsed", "drained", "rinsed and drained", "slice", "cut", "into", "thinly", "thickly", "coarsely", "finely", "prepared", "cooked", "raw", "uncooked", "frozen", "thawed", "room temperature", "softened", "melted", "warm", "cold", "hot", "divided", "for garnish", "for serving", "to taste", "as needed", "optional"
-    ]
-    for word in descriptors:
-        n = n.replace(word, "")
-    n = re.sub(r"\s+", " ", n).strip()
-    # Tokenize and match by main ingredient words
-    tokens = n.split()
-    if not tokens:
-        return n
-    # Build a set of canonical ingredient names from all items seen so far
-    global allThings
-    seen_names = set([re.sub(r"\s+", " ", canonicalize_name(it.name)) for it in allThings])
-    candidates = list(seen_names)
-    # Try to find a candidate that contains all tokens (partial match)
-    for cand in candidates:
-        cand_tokens = cand.split()
-        if all(token in cand_tokens for token in tokens):
-            return cand
-    # Try to find a candidate that contains the main token (first word)
-    for cand in candidates:
-        cand_tokens = cand.split()
-        if tokens[0] in cand_tokens:
-            return cand
-    # Fallback to fuzzy matching
-    match = difflib.get_close_matches(n, candidates, n=1, cutoff=0.8)
-    if match:
-        return match[0]
-    return n
 
 def parse_quantity(q: str) -> Fraction | None:
     if not q:
@@ -100,9 +106,11 @@ def parse_quantity(q: str) -> Fraction | None:
     s = q.strip()
     if not s:
         return None
+    # replace unicode fractions
     uni = {'½':'1/2','¼':'1/4','¾':'3/4','⅓':'1/3','⅔':'2/3','⅛':'1/8'}
     for k,v in uni.items():
         s = s.replace(k, v)
+    # replace hyphens with space
     s = s.replace('-', ' ')
     parts = s.split()
     total = Fraction(0)
@@ -111,13 +119,16 @@ def parse_quantity(q: str) -> Fraction | None:
             if '/' in part:
                 total += Fraction(part)
             else:
+                # try integer then float
                 try:
                     total += Fraction(int(part))
                 except Exception:
                     total += Fraction(float(part))
         except Exception:
+            # not a number (e.g., 'to', 'taste') -> cannot parse
             return None
     return total
+
 
 def format_quantity(frac: Fraction) -> str:
     if frac is None:
@@ -134,32 +145,95 @@ def format_quantity(frac: Fraction) -> str:
         return str(whole)
     return str(rem)
 
+
+# --- Improved fuzzy ingredient name normalization ---
+def canonicalize_name(name: str) -> str:
+    mapping = [
+        (r"fettuccine.*", "fettuccine"),
+        (r"chicken breast[s]?", "chicken"),
+        (r"parmesan.*cheese", "parmesan cheese"),
+        (r"olive oil", "olive oil"),
+        (r"cream cheese", "cream cheese"),
+        (r"heavy cream", "heavy cream"),
+        (r"garlic", "garlic"),
+        (r"butter", "butter"),
+        (r"noodle[s]?", "fettuccine"),
+        (r"parsley", "parsley"),
+        (r"lemon juice", "lemon juice"),
+        (r"chicken broth", "chicken broth"),
+    ]
+    n = name.lower()
+    n = re.sub(r"\(.*?\)", "", n)
+    n = re.sub(r"[^a-z0-9\s]", "", n)
+    n = re.sub(r"\s+", " ", n).strip()
+    for pat, canon in mapping:
+        if re.search(pat, n):
+            return canon
+    blacklist = [
+        "boneless", "skinless", "dry", "fresh", "extra",
+        "low-sodium", "large", "small", "medium", "freshly", "ground", "sliced", "pieces", "breasts", "breast", "noodles", "beat", "beaten"
+    ]
+    for word in blacklist:
+        n = n.replace(word, "")
+    n = re.sub(r"\s+", " ", n).strip()
+    return n
+ingredient_unit_type = {
+    "chicken": "oz",
+    "fettuccine": "oz",
+    "parmesan cheese": "oz",
+    "olive oil": "tbsp",
+    "butter": "tbsp",
+    "cream cheese": "oz",
+    "heavy cream": "cup",
+    "garlic": "clove",
+    "parsley": "tbsp",
+    "lemon juice": "tbsp",
+    "chicken broth": "cup",
+}
+def get_canonical_unit(ingredient: str) -> str:
+    return ingredient_unit_type.get(ingredient, None)
 def convert_unit(qty, from_unit, to_unit):
     if from_unit == to_unit:
         return qty
     key = (from_unit, to_unit)
     if key in unit_conversions:
         return qty * unit_conversions[key]
-    return None
+    return None  # can't convert
+ingredient_count_to_weight = {
+    "chicken": 4,  # 1 chicken breast ≈ 4 oz
+    "fettuccine": 2,  # 1 cup dry ≈ 2 oz (approximate)
+}
 
-# This function doesn't do anything?
-def get_canonical_unit(name_key, unit_key):
-    # For now, just use the most common unit among all items with this name
-    # Could be improved with a static map or more logic
-    return unit_key
-
-def combineIngredients(items: list) -> list:
+def combine_ingredients(items: list) -> list:
+    """Combine ingredients with improved fuzzy name and canonical unit logic."""
     agg = {}
+    non_numeric = []
     for it in items:
         name_key = canonicalize_name(it.name)
         unit_key = normalize_unit(it.unit)
         qty = parse_quantity(it.quantity)
         if qty is None:
+            non_numeric.append((name_key, unit_key, it))
             continue
-        canon_unit = get_canonical_unit(name_key, unit_key)
+        canon_unit = get_canonical_unit(name_key)
+        if canon_unit is None:
+            canon_unit = unit_key  # fallback: use as-is
+        # Handle count-to-weight for chicken and fettuccine
+        if unit_key in ["piece", "breast", "breasts", ""] and name_key in ingredient_count_to_weight:
+            qty = qty * ingredient_count_to_weight[name_key]
+            unit_key = canon_unit
         qty_in_canon = convert_unit(qty, unit_key, canon_unit)
         if qty_in_canon is None and unit_key == canon_unit:
             qty_in_canon = qty
+        if qty_in_canon is None:
+            # can't convert, treat as separate
+            key = (name_key, unit_key)
+            if key not in agg:
+                agg[key] = {'qty': Fraction(0), 'unit': it.unit, 'display_name': it.name}
+            agg[key]['qty'] += qty
+            if len(it.name) > len(agg[key]['display_name']):
+                agg[key]['display_name'] = it.name
+            continue
         key = (name_key, canon_unit)
         if key not in agg:
             agg[key] = {'qty': Fraction(0), 'unit': canon_unit, 'display_name': it.name}
@@ -174,12 +248,7 @@ def combineIngredients(items: list) -> list:
         )
         for key in agg
     ]
-
-
-def hash_password(password: str) -> str:
-    return hashlib.sha256(password.encode("utf-8")).hexdigest()
-
-def saveUserStore(path: str = None):
+def save_user_store(path: str = None):
     """Persist USER_STORE to CSV file. Overwrites existing file.
     Each row: username, password_hash
     """
@@ -240,7 +309,7 @@ def show_register_dialog(parent) -> None:
         messagebox.showinfo("Success", f"Registered {username}")
         # persist the user store after successful registration
         try:
-            saveUserStore()
+            save_user_store()
         except Exception:
             # non-fatal; warn on console
             print("Warning: failed to save user store after registration")
@@ -306,7 +375,8 @@ def entered():
 
     makeButton()
     displayButtons()
-    combined = combineIngredients(alphabetizeList(allThings))
+    alphabetizedThings = alphabetizeList(allThings)
+    combined = combine_ingredients(alphabetizedThings)
     lines = [f"{it.quantity} {it.unit} {it.name}".strip() for it in combined]
     labelList.configure(text="\n".join(lines))
     entryLink.delete(0, "end")
@@ -329,7 +399,7 @@ def linkButtonClicked(buttonUrl):
     makeButton()
     displayButtons()
     alphabetizedThings = alphabetizeList(allThings)
-    combined = combineIngredients(alphabetizedThings)
+    combined = combine_ingredients(alphabetizedThings)
     lines = [f"{it.quantity} {it.unit} {it.name}".strip() for it in combined]
     labelList.configure(text="\n".join(lines))
 
