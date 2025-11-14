@@ -59,7 +59,7 @@ def normalize_unit(unit: str) -> str:
     u = re.sub(r"[^a-z ]", "", u)
     return unitCanonical.get(u, u)
 
-# Note: Code does not currently work for canonicalizing the name
+# Note: Code does not currently work
 def canonicalize_name(name: str) -> str:
     n = name.lower()
     n = re.sub(r"\(.*?\)", "", n)
