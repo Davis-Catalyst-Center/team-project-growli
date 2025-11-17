@@ -353,9 +353,16 @@ def show_login_dialog(parent) -> bool:
 def entered():
     global entryLink, labelList, allThings, allLinks
     url = entryLink.get().strip()
+
+    counter = 0
+    for link in allLinks:
+        if link == url:
+            counter += 1
+
     if not url:
         messagebox.showwarning("Input Error", "Please enter a URL")
         return
+    
 
     try:
         html = getHtml(url)
@@ -364,7 +371,7 @@ def entered():
         return
 
     # parse
-    items = getInfo(html, url)
+    items = getInfo(html, counter, url)
     if not items:
         messagebox.showinfo("No ingredients", "No ingredients were found on that page.")
         return
