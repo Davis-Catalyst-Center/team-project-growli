@@ -388,6 +388,24 @@ def entered():
     labelList.configure(text="\n".join(lines))
     entryLink.delete(0, "end")
 
+    # parse
+    items = getInfo(html, url)
+    if not items:
+        messagebox.showinfo("No ingredients", "No ingredients were found on that page.")
+        return
+
+    # append parsed items to allThings and update label
+    allThings.extend(items)
+    allLinks.append(url)
+
+    makeButton()
+    displayButtons()
+    alphabetizedThings = alphabetizeList(allThings)
+    combined = combine_ingredients(alphabetizedThings)
+    lines = [f"{it.quantity} {it.unit} {it.name}".strip() for it in combined]
+    labelList.configure(text="\n".join(lines))
+    entryLink.delete(0, "end")
+
 def linkButtonClicked(buttonUrl):
     global allLinks
     # Remove the items associated with the URL, then remove the URL
