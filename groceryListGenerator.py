@@ -353,40 +353,15 @@ def show_login_dialog(parent) -> bool:
 def entered():
     global entryLink, labelList, allThings, allLinks
     url = entryLink.get().strip()
-
-    counter = 0
-    for link in allLinks:
-        if link == url:
-            counter += 1
-
     if not url:
         messagebox.showwarning("Input Error", "Please enter a URL")
         return
-    
 
     try:
         html = getHtml(url)
     except Exception as e:
         messagebox.showerror("Network Error", f"Could not fetch URL: {e}")
         return
-
-    # parse
-    items = getInfo(html, counter, url)
-    if not items:
-        messagebox.showinfo("No ingredients", "No ingredients were found on that page.")
-        return
-
-    # append parsed items to allThings and update label
-    allThings.extend(items)
-    allLinks.append(url)
-
-    makeButton()
-    displayButtons()
-    alphabetizedThings = alphabetizeList(allThings)
-    combined = combine_ingredients(alphabetizedThings)
-    lines = [f"{it.quantity} {it.unit} {it.name}".strip() for it in combined]
-    labelList.configure(text="\n".join(lines))
-    entryLink.delete(0, "end")
 
     # parse
     items = getInfo(html, url)

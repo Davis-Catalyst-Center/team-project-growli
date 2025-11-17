@@ -5,8 +5,8 @@ except ImportError:
     requests = None
 
 class Ingredient:
-    def __init__(self, quantity, unit, name, urlInstance=0, url=""):
-        self.urlInstance = urlInstance
+    def __init__(self, quantity, unit, name, url=""):
+
         self.quantity = quantity
         self.unit = unit
         self.name = name
@@ -14,7 +14,7 @@ class Ingredient:
         
 
 
-def getHtml(url: str, urlInstance) -> str:
+def getHtml(url: str) -> str:
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
         "Accept-Language": "en-US,en;q=0.9",
@@ -26,15 +26,15 @@ def getHtml(url: str, urlInstance) -> str:
     if requests:
         resp = requests.get(url, headers=headers, timeout=10)
         resp.raise_for_status()
-        return urlInstance, resp.text
+        return resp.text
     else:
         request = req.Request(url, headers=headers)
         with req.urlopen(request) as response:
             data = response.read()
-            return urlInstance, data.decode("utf-8")
+            return data.decode("utf-8")
 
 
-def getInfo(html: str, urlInstance, url: str = None):
+def getInfo(html: str, url: str = None):
     """
     Parse ingredient triples from html and return list of Ingredient.
     Dispatches to a site-specific parser if known, else tries all parsers.
@@ -71,7 +71,7 @@ def getInfo(html: str, urlInstance, url: str = None):
                 break
             name = html[startN:endN].strip()
 
-            items.append(Ingredient(quantity, unit, name, urlInstance, url))
+            items.append(Ingredient(quantity, unit, name, url))
             currentIndex = endN
         return items
 
@@ -96,7 +96,7 @@ def getInfo(html: str, urlInstance, url: str = None):
                 quantity, unit, name = '', '', parts[0]
             else:
                 continue
-            items.append(Ingredient(quantity, unit, name, urlInstance, url))
+            items.append(Ingredient(quantity, unit, name, url))
         return items
 
 
@@ -124,7 +124,7 @@ def getInfo(html: str, urlInstance, url: str = None):
                 import re as _re
                 name = _re.sub(r'<[^>]+>', '', name)
             if name:
-                items.append(Ingredient(amount, unit, name, urlInstance, url))
+                items.append(Ingredient(amount, unit, name, url))
         return items
 
     # Dispatch based on URL or HTML signature
