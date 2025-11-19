@@ -362,18 +362,21 @@ def entered():
     except Exception as e:
         messagebox.showerror("Network Error", f"Could not fetch URL: {e}")
         return
+    
+    # Add link to allLinks here so the index can be added into the class
+    allLinks.append(url)
+    indexOfUrl = len(allLinks) - 1
 
     # parse
-    items = getInfo(html, url)
+    items = getInfo(html, indexOfUrl, url)
     if not items:
         messagebox.showinfo("No ingredients", "No ingredients were found on that page.")
         return
 
     # append parsed items to allThings and update label
     allThings.extend(items)
-    allLinks.append(url)
 
-    makeButton()
+    makeButton(indexOfUrl)
     displayButtons()
     alphabetizedThings = alphabetizeList(allThings)
     combined = combine_ingredients(alphabetizedThings)
@@ -381,22 +384,22 @@ def entered():
     labelList.configure(text="\n".join(lines))
     entryLink.delete(0, "end")
 
-def linkButtonClicked(buttonUrl):
+def linkButtonClicked(buttonUrl, linkIndex):
     global allLinks
     # Remove the items associated with the URL, then remove the URL
     itemsToRemove = []
     for i in range(len(allThings)):
-        if allThings[i].url == buttonUrl:
+        if allThings[i].url == buttonUrl and allThings[i].index == linkIndex:
             itemsToRemove.append(allThings[i])
    
     for item in itemsToRemove:
         allThings.remove(item)
 
-    allLinks = [link for link in allLinks if link != buttonUrl]
+    # make allLinks at the specified index = None instead of removing it so the indexes don't get messed up
+    allLinks[linkIndex] = None
 
     # Update everything so the display is up to date
-    removeButton(buttonUrl)
-    makeButton()
+    removeButton(buttonUrl, linkIndex)          
     displayButtons()
     alphabetizedThings = alphabetizeList(allThings)
     combined = combine_ingredients(alphabetizedThings)
@@ -404,21 +407,39 @@ def linkButtonClicked(buttonUrl):
     labelList.configure(text="\n".join(lines))
 
 
-def removeButton(removeUrl):
-    for button in buttons:
-        if removeUrl == button['text']:
+def removeButton(removeUrl, removeIndex):
+    global index
+    for i in range(len(buttons)):
+        button = buttons[i]
+        endUrlIndex = button['text'].find(", (")
+        buttonUrl = button['text'][:endUrlIndex]
+        endIndexIndex = button['text'].find(")", endUrlIndex)
+        buttonIndex = button['text'][endUrlIndex + len(", ("):endIndexIndex]
+        if removeIndex == int(buttonIndex) and removeUrl == buttonUrl:
             button.pack_forget()
             button.destroy()
+            try:
+                buttons.pop(i)
+            except:
+                pass
+            break
 
-def makeButton():
+def makeButton(urlIndex):
     global buttons
+    """
     for button in buttons:
         button.pack_forget()
         button.destroy()
     buttons = []
     for i in range(len(allLinks)):
-        buttonText = allLinks[i]
-        buttons.append(tk.Button(text=buttonText, command=lambda t=buttonText: linkButtonClicked(t)))
+        if allLinks[i] != None:
+            buttonText = allLinks[i]
+            buttons.append(tk.Button(text=buttonText, command=lambda t=buttonText: linkButtonClicked(t)))
+            """
+    buttonText = allLinks[urlIndex]
+    buttons.append(tk.Button(text=f"{buttonText}, ({urlIndex})", command=lambda t = buttonText, i=urlIndex: linkButtonClicked(t, i)))
+    
+
 
 def displayButtons():
     for button in buttons:
