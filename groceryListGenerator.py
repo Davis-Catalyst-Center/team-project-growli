@@ -418,10 +418,7 @@ def removeButton(removeUrl, removeIndex):
         if removeIndex == int(buttonIndex) and removeUrl == buttonUrl:
             button.pack_forget()
             button.destroy()
-            try:
-                buttons.pop(i)
-            except:
-                pass
+            buttons.pop(i)
             break
 
 def makeButton(urlIndex):
