@@ -5,11 +5,13 @@ except ImportError:
     requests = None
 
 class Ingredient:
-    def __init__(self, quantity, unit, name, url=""):
+    def __init__(self, quantity, unit, name, index=-1, url=""):
         self.quantity = quantity
         self.unit = unit
         self.name = name
+        self.index = index
         self.url = url
+        
 
 
 def getHtml(url: str) -> str:
@@ -32,7 +34,7 @@ def getHtml(url: str) -> str:
             return data.decode("utf-8")
 
 
-def getInfo(html: str, url: str = None):
+def getInfo(html: str, index = None, url: str = None):
     """
     Parse ingredient triples from html and return list of Ingredient.
     Dispatches to a site-specific parser if known, else tries all parsers.
@@ -69,7 +71,7 @@ def getInfo(html: str, url: str = None):
                 break
             name = html[startN:endN].strip()
 
-            items.append(Ingredient(quantity, unit, name, url))
+            items.append(Ingredient(quantity, unit, name, index, url))
             currentIndex = endN
         return items
 
@@ -94,7 +96,7 @@ def getInfo(html: str, url: str = None):
                 quantity, unit, name = '', '', parts[0]
             else:
                 continue
-            items.append(Ingredient(quantity, unit, name, url))
+            items.append(Ingredient(quantity, unit, name, index, url))
         return items
 
 
@@ -122,7 +124,7 @@ def getInfo(html: str, url: str = None):
                 import re as _re
                 name = _re.sub(r'<[^>]+>', '', name)
             if name:
-                items.append(Ingredient(amount, unit, name, url))
+                items.append(Ingredient(amount, unit, name, index , url))
         return items
 
     # Dispatch based on URL or HTML signature
