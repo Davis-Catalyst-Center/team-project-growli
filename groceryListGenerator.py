@@ -10,6 +10,7 @@ import re
 URL = ""
 
 innerFrame = None
+innerFrame = None
 entryLink = None
 labelList = None
 allThings = []
@@ -382,10 +383,7 @@ def entered():
     alphabetizedThings = alphabetizeList(allThings)
     combined = combine_ingredients(alphabetizedThings)
     lines = [f"{it.quantity} {it.unit} {it.name}".strip() for it in combined]
-    labelList.config(state="normal")
-    labelList.delete("1.0", tk.END)
-    labelList.insert(tk.END, "\n".join(lines))
-    labelList.config(state="disabled")
+    labelList.configure(text="\n".join(lines))
     entryLink.delete(0, "end")
 
 def linkButtonClicked(buttonUrl, linkIndex):
@@ -483,30 +481,45 @@ def main():
 
 def build_main_ui(root):
     global entryLink, labelList
+    # label for instructions
+    labelInstructions = tk.Label(root, text="Please enter a link to a recipe page and press Enter")
+    labelInstructions.pack(pady=6)
 
-    # Instructions and entry at the top
-    labelInstructions = tk.Label(root, text="Please enter a link to a recipe page and press Enter", anchor="w", justify=tk.LEFT)
-    labelInstructions.pack(fill=tk.X, padx=10, pady=(10,2))
-
+    # textbox for input
     entryLink = tk.Entry(root, width=80)
-    entryLink.pack(fill=tk.X, padx=10, pady=(0,10))
+    entryLink.pack(pady=6)
 
-    # Scrollable ingredient list below
-    list_frame = tk.Frame(root)
-    list_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=(0,10))
-
-    scrollbar = tk.Scrollbar(list_frame, orient="vertical")
-    labelList = tk.Text(list_frame, wrap=tk.WORD, height=16, state="disabled")
+    # List
+    ingredients_frame = tk.Frame(root)
+    ingredients_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=(0, 10))
+    ingredients_scrollbar = tk.Scrollbar(ingredients_frame, orient="vertical")
+    labelList = tk.Text(ingredients_frame, wrap=tk.WORD, height=16, state="disabled")
     labelList.pack(side="left", fill="both", expand=True)
-    scrollbar.pack(side="right", fill="y")
-    labelList.config(yscrollcommand=scrollbar.set)
-    scrollbar.config(command=labelList.yview)
+    ingredients_scrollbar.pack(side="right", fill="y")
+    labelList.config(yscrollcommand=ingredients_scrollbar.set)
+    ingredients_scrollbar.config(command=labelList.yview)
 
-    # Mousewheel scrolling only when cursor is over the Text widget
-    def _on_mousewheel(event):
+    def _on_ingredients_mousewheel(event):
         labelList.yview_scroll(int(-1*(event.delta/120)), "units")
-    labelList.bind("<Enter>", lambda e: labelList.bind_all("<MouseWheel>", _on_mousewheel))
+    labelList.bind("<Enter>", lambda e: labelList.bind_all("<MouseWheel>", _on_ingredients_mousewheel))
     labelList.bind("<Leave>", lambda e: labelList.unbind_all("<MouseWheel>"))
+
+    # Links section - new code
+    links_frame = tk.Frame(root)
+    links_frame.pack(fill=tk.X, padx=10, pady=(0, 6))
+    links_scrollbar = tk.Scrollbar(links_frame, orient="vertical")
+    links_text = tk.Text(links_frame, wrap=tk.WORD, height=4, state="disabled")
+    links_text.pack(side="left", fill="x", expand=True)
+    links_scrollbar.pack(side="right", fill="y")
+    links_text.config(yscrollcommand=links_scrollbar.set)
+    links_scrollbar.config(command=links_text.yview)
+
+    def _on_links_mousewheel(event):
+        links_text.yview_scroll(int(-1*(event.delta/120)), "units")
+    links_text.bind("<Enter>", lambda e: links_text.bind_all("<MouseWheel>", _on_links_mousewheel))
+    links_text.bind("<Leave>", lambda e: links_text.unbind_all("<MouseWheel>"))
+
+    root.links_text = links_text  # Store for later updates
 
     root.bind("<Return>", lambda event: entered())
 
