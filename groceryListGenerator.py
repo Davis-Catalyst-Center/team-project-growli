@@ -452,9 +452,17 @@ def displayButtons():
         for idx, link in enumerate(allLinks):
             if link is not None:
                 buttons.append({'text': f"{link}, ({idx})", 'url': link, 'index': idx})
+        # Insert clickable links
         for button in buttons:
             display_text = button['url']
+            start_idx = links_text.index(tk.END)
             links_text.insert(tk.END, display_text + "\n")
+            tag_name = f"link_{button['index']}"
+            # Tag the line for click
+            line_num = int(float(start_idx))
+            links_text.tag_add(tag_name, f"{line_num}.0", f"{line_num}.end")
+            links_text.tag_config(tag_name, foreground="blue", underline=True)
+            links_text.tag_bind(tag_name, '<Button-1>', lambda e, url=button['url'], idx=button['index']: linkButtonClicked(url, idx))
         links_text.config(state="disabled")
 
 def alphabetizeList(list):
