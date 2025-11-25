@@ -443,27 +443,19 @@ def makeButton(urlIndex):
 
 
 def displayButtons():
-    if hasattr(entryLink.master.master, 'links_text'):
-        links_text = entryLink.master.master.links_text
-        links_text.config(state="normal")
-        links_text.delete("1.0", tk.END)
-        # Rebuild buttons from allLinks to ensure consistency
+    # Show recipe links as real buttons in the scrollable frame
+    if hasattr(entryLink.master.master, 'links_frame'):
+        frame = entryLink.master.master.links_frame
+        # Remove old buttons
+        for widget in frame.winfo_children():
+            widget.destroy()
         buttons.clear()
         for idx, link in enumerate(allLinks):
             if link is not None:
-                buttons.append({'text': f"{link}, ({idx})", 'url': link, 'index': idx})
-        # Insert clickable links
-        for button in buttons:
-            display_text = button['url']
-            start_idx = links_text.index(tk.END)
-            links_text.insert(tk.END, display_text + "\n")
-            tag_name = f"link_{button['index']}"
-            # Tag the line for click
-            line_num = int(float(start_idx))
-            links_text.tag_add(tag_name, f"{line_num}.0", f"{line_num}.end")
-            links_text.tag_config(tag_name, foreground="blue", underline=True)
-            links_text.tag_bind(tag_name, '<Button-1>', lambda e, url=button['url'], idx=button['index']: linkButtonClicked(url, idx))
-        links_text.config(state="disabled")
+                btn = tk.Button(frame, text=link, fg="blue", cursor="hand2", relief=tk.RAISED,
+                                command=lambda url=link, i=idx: linkButtonClicked(url, i))
+                btn.pack(fill="x", pady=1)
+                buttons.append({'text': link, 'url': link, 'index': idx, 'widget': btn})
 
 def alphabetizeList(list):
     return sorted(list, key=lambda ingredient: ingredient.name.lower())
@@ -525,22 +517,23 @@ def build_main_ui(root):
     labelList.bind("<Enter>", lambda e: labelList.bind_all("<MouseWheel>", _on_ingredients_mousewheel))
     labelList.bind("<Leave>", lambda e: labelList.unbind_all("<MouseWheel>"))
 
-    # Links section - new code
+    # Links section - replace Text with scrollable Frame of Buttons
     links_frame = tk.Frame(root)
     links_frame.pack(fill=tk.X, padx=10, pady=(0, 6))
-    links_scrollbar = tk.Scrollbar(links_frame, orient="vertical")
-    links_text = tk.Text(links_frame, wrap=tk.WORD, height=4, state="disabled")
-    links_text.pack(side="left", fill="x", expand=True)
-    links_scrollbar.pack(side="right", fill="y")
-    links_text.config(yscrollcommand=links_scrollbar.set)
-    links_scrollbar.config(command=links_text.yview)
-
-    def _on_links_mousewheel(event):
-        links_text.yview_scroll(int(-1*(event.delta/120)), "units")
-    links_text.bind("<Enter>", lambda e: links_text.bind_all("<MouseWheel>", _on_links_mousewheel))
-    links_text.bind("<Leave>", lambda e: links_text.unbind_all("<MouseWheel>"))
-
-    root.links_text = links_text  # Store for later updates
+    canvas = tk.Canvas(links_frame, height=100)
+    scrollbar = tk.Scrollbar(links_frame, orient="vertical", command=canvas.yview)
+    scrollable_frame = tk.Frame(canvas)
+    scrollable_frame.bind(
+        "<Configure>",
+        lambda e: canvas.configure(
+            scrollregion=canvas.bbox("all")
+        )
+    )
+    canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+    canvas.configure(yscrollcommand=scrollbar.set)
+    canvas.pack(side="left", fill="x", expand=True)
+    scrollbar.pack(side="right", fill="y")
+    root.links_frame = scrollable_frame  # Store for later updates
 
     root.bind("<Return>", lambda event: entered())
 
