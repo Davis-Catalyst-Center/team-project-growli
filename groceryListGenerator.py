@@ -381,10 +381,7 @@ def entered():
     alphabetizedThings = alphabetizeList(allThings)
     combined = combine_ingredients(alphabetizedThings)
     lines = [f"{it.quantity} {it.unit} {it.name}".strip() for it in combined]
-    labelList.config(state="normal")
-    labelList.delete("1.0", tk.END)
-    labelList.insert(tk.END, "\n".join(lines))
-    labelList.config(state="disabled")
+    labelList.configure(text="\n".join(lines))
     entryLink.delete(0, "end")
 
 def linkButtonClicked(buttonUrl, linkIndex):
@@ -440,7 +437,7 @@ def makeButton(urlIndex):
             buttons.append(tk.Button(text=buttonText, command=lambda t=buttonText: linkButtonClicked(t)))
             """
     buttonText = allLinks[urlIndex]
-    buttons.append(tk.Button(innerFrame, text=f"{buttonText}, ({urlIndex})", command=lambda t = buttonText, i=urlIndex: linkButtonClicked(t, i)))
+    buttons.append(tk.Button(text=f"{buttonText}, ({urlIndex})", command=lambda t = buttonText, i=urlIndex: linkButtonClicked(t, i)))
     
 
 
@@ -484,46 +481,18 @@ def main():
     root.mainloop()
 
 def build_main_ui(root):
-    global entryLink, labelList, innerFrame
-
-    mainFrame = tk.Frame(root, borderwidth=0, highlightthickness=0)
-    mainFrame.pack(fill=tk.BOTH, expand=True)
-
-    canvas = tk.Canvas(mainFrame, borderwidth=0, highlightthickness=0)
-    canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-
-    scrollbar = tk.Scrollbar(mainFrame, orient=tk.VERTICAL, command=canvas.yview)
-    scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
-
-    canvas.config(yscrollcommand=scrollbar.set)
-    canvas.bind("<Configure>", lambda e: canvas.config(scrollregion=canvas.bbox(tk.ALL)))
-
-    innerFrame = tk.Frame(canvas, pady=10, padx=15, borderwidth=0, highlightthickness=0)
-    canvas.create_window((0,0), window=innerFrame, anchor="center")
-
+    global entryLink, labelList
     # label for instructions
-    labelInstructions = tk.Label(innerFrame, text="Please enter a link to a recipe page and press Enter")
+    labelInstructions = tk.Label(root, text="Please enter a link to a recipe page and press Enter")
     labelInstructions.pack(pady=6)
 
     # textbox for input
-    entryLink = tk.Entry(innerFrame, width=80)
+    entryLink = tk.Entry(root, width=80)
     entryLink.pack(pady=6)
 
-   # Ingredient list with scrollbar
-list_frame = tk.Frame(innerFrame)
-list_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=6)
-
-scrollbar = tk.Scrollbar(list_frame, orient="vertical")
-labelList = tk.Text(list_frame, wrap=tk.WORD, height=16, state="disabled")
-labelList.pack(side="left", fill="both", expand=True)
-scrollbar.pack(side="right", fill="y")
-labelList.config(yscrollcommand=scrollbar.set)
-scrollbar.config(command=labelList.yview)
-
-def _on_mousewheel(event):
-    labelList.yview_scroll(int(-1*(event.delta/120)), "units")
-labelList.bind("<Enter>", lambda e: labelList.bind_all("<MouseWheel>", _on_mousewheel))
-labelList.bind("<Leave>", lambda e: labelList.unbind_all("<MouseWheel>"))
+    # List
+    labelList = tk.Label(root, text="", justify=tk.LEFT, anchor="w")
+    labelList.pack(fill=tk.BOTH, expand=True, padx=10, pady=6)
     
 
     root.bind("<Return>", lambda event: entered())
