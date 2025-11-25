@@ -9,7 +9,6 @@ import re
 
 URL = ""
 
-innerFrame = None
 entryLink = None
 labelList = None
 allThings = []
@@ -422,7 +421,10 @@ def removeButton(removeUrl, removeIndex):
         if removeIndex == int(buttonIndex) and removeUrl == buttonUrl:
             button.pack_forget()
             button.destroy()
-            buttons.pop(i)
+            try:
+                buttons.pop(i)
+            except:
+                pass
             break
 
 def makeButton(urlIndex):
