@@ -11,6 +11,7 @@ URL = ""
 
 innerFrame = None
 entryLink = None
+entryIngredient = None
 labelList = None
 allThings = []
 allLinks = []
@@ -354,8 +355,16 @@ def show_login_dialog(parent) -> bool:
 def entered(canvas):
     global entryLink, labelList, allThings, allLinks
     url = entryLink.get().strip()
-    if not url:
-        messagebox.showwarning("Input Error", "Please enter a URL")
+    ingredient = entryIngredient.get().strip()
+    if not url and not entryIngredient:
+        messagebox.showwarning("Input Error", "Please enter a URL or ingredient")
+        return
+    
+    if not url and ingredient:
+        enteredIngredient(ingredient)
+        entryIngredient.delete(0, "end")
+        # Configure the canvas everytime the user enters, so it matches the content
+        canvas.configure(scrollregion=canvas.bbox(tk.ALL))
         return
 
     try:
@@ -386,6 +395,27 @@ def entered(canvas):
     entryLink.delete(0, "end")
     # Configure the canvas everytime the user enters, so it matches the content
     canvas.configure(scrollregion=canvas.bbox(tk.ALL))
+
+def enteredIngredient(ingredientName):
+    foundThing = False
+    itemsToRemove = []
+    for i in range(len(allThings)):
+        if ingredientName.lower() == allThings[i].name.lower():
+            itemsToRemove.append(allThings[i])
+            foundThing = True
+    if foundThing == False:
+        messagebox.showinfo("Could Not Find", "The ingredient entered could not be found, please try again.")
+        return
+    for item in itemsToRemove:
+        allThings.remove(item)
+
+    # Update List
+    alphabetizedThings = alphabetizeList(allThings)
+    combined = combine_ingredients(alphabetizedThings)
+    lines = [f"{it.quantity} {it.unit} {it.name}".strip() for it in combined]
+    labelList.configure(text="\n".join(lines))
+
+
 
 def linkButtonClicked(buttonUrl, linkIndex, canvas):
     global allLinks
@@ -484,7 +514,7 @@ def main():
     root.mainloop()
 
 def build_main_ui(root):
-    global entryLink, labelList, innerFrame
+    global entryLink, labelList, innerFrame, entryIngredient
 
     mainFrame = tk.Frame(root, borderwidth=0, highlightthickness=0)
     mainFrame.pack(fill=tk.BOTH, expand=True)
@@ -508,6 +538,14 @@ def build_main_ui(root):
     # textbox for input
     entryLink = tk.Entry(innerFrame, width=80)
     entryLink.pack(pady=6)
+
+    # label for second instructions
+    labelInstruct2 = tk.Label(innerFrame, text="Already have an ingredient? Type its name below to remove it!", font=("TkDefaultFont", 8))
+    labelInstruct2.pack(pady=3)
+
+    # textbox for ingredient input
+    entryIngredient = tk.Entry(innerFrame, width=50, font=("TkDefaultFont", 10))
+    entryIngredient.pack(pady=3)
 
     # List
     labelList = tk.Label(innerFrame, text="", justify=tk.LEFT, anchor="w")
