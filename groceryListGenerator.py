@@ -381,14 +381,10 @@ def entered():
     alphabetizedThings = alphabetizeList(allThings)
     combined = combine_ingredients(alphabetizedThings)
     lines = [f"{it.quantity} {it.unit} {it.name}".strip() for it in combined]
-<<<<<<< HEAD
-    labelList.configure(text="\n".join(lines))
-=======
-        labelList.config(state="normal")
-        labelList.delete("1.0", tk.END)
-        labelList.insert(tk.END, "\n".join(lines))
-        labelList.config(state="disabled")
->>>>>>> 7b5d8c2ebdad6afb9c573a495d7711704767ee38
+    labelList.config(state="normal")
+    labelList.delete("1.0", tk.END)
+    labelList.insert(tk.END, "\n".join(lines))
+    labelList.config(state="disabled")
     entryLink.delete(0, "end")
 
 def linkButtonClicked(buttonUrl, linkIndex):
@@ -444,13 +440,18 @@ def makeButton(urlIndex):
             buttons.append(tk.Button(text=buttonText, command=lambda t=buttonText: linkButtonClicked(t)))
             """
     buttonText = allLinks[urlIndex]
-    buttons.append(tk.Button(text=f"{buttonText}, ({urlIndex})", command=lambda t = buttonText, i=urlIndex: linkButtonClicked(t, i)))
+    buttons.append(f"{buttonText}, ({urlIndex})")
     
 
 
 def displayButtons():
-    for button in buttons:
-        button.pack(pady=6)
+    if hasattr(entryLink.master.master, 'links_text'):
+        links_text = entryLink.master.master.links_text
+        links_text.config(state="normal")
+        links_text.delete("1.0", tk.END)
+        for button in buttons:
+            links_text.insert(tk.END, button + "\n")
+        links_text.config(state="disabled")
 
 def alphabetizeList(list):
     return sorted(list, key=lambda ingredient: ingredient.name.lower())
@@ -498,9 +499,36 @@ def build_main_ui(root):
     entryLink.pack(pady=6)
 
     # List
-    labelList = tk.Label(root, text="", justify=tk.LEFT, anchor="w")
-    labelList.pack(fill=tk.BOTH, expand=True, padx=10, pady=6)
-    
+    ingredients_frame = tk.Frame(root)
+    ingredients_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=(0, 10))
+    ingredients_scrollbar = tk.Scrollbar(ingredients_frame, orient="vertical")
+    labelList = tk.Text(ingredients_frame, wrap=tk.WORD, height=16, state="disabled")
+    labelList.pack(side="left", fill="both", expand=True)
+    ingredients_scrollbar.pack(side="right", fill="y")
+    labelList.config(yscrollcommand=ingredients_scrollbar.set)
+    ingredients_scrollbar.config(command=labelList.yview)
+
+    def _on_ingredients_mousewheel(event):
+        labelList.yview_scroll(int(-1*(event.delta/120)), "units")
+    labelList.bind("<Enter>", lambda e: labelList.bind_all("<MouseWheel>", _on_ingredients_mousewheel))
+    labelList.bind("<Leave>", lambda e: labelList.unbind_all("<MouseWheel>"))
+
+    # Links section - new code
+    links_frame = tk.Frame(root)
+    links_frame.pack(fill=tk.X, padx=10, pady=(0, 6))
+    links_scrollbar = tk.Scrollbar(links_frame, orient="vertical")
+    links_text = tk.Text(links_frame, wrap=tk.WORD, height=4, state="disabled")
+    links_text.pack(side="left", fill="x", expand=True)
+    links_scrollbar.pack(side="right", fill="y")
+    links_text.config(yscrollcommand=links_scrollbar.set)
+    links_scrollbar.config(command=links_text.yview)
+
+    def _on_links_mousewheel(event):
+        links_text.yview_scroll(int(-1*(event.delta/120)), "units")
+    links_text.bind("<Enter>", lambda e: links_text.bind_all("<MouseWheel>", _on_links_mousewheel))
+    links_text.bind("<Leave>", lambda e: links_text.unbind_all("<MouseWheel>"))
+
+    root.links_text = links_text  # Store for later updates
 
     root.bind("<Return>", lambda event: entered())
 
