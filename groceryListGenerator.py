@@ -492,34 +492,18 @@ def build_main_ui(root):
     list_frame = tk.Frame(root)
     list_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=(0,10))
 
-    canvas_height = 300  # Set a reasonable height for the scrollable area
-    canvas = tk.Canvas(list_frame, borderwidth=0, highlightthickness=0, height=canvas_height)
-    scrollbar = tk.Scrollbar(list_frame, orient="vertical", command=canvas.yview)
-    scrollable_frame = tk.Frame(canvas)
-
-    def _on_frame_configure(event):
-        canvas.configure(scrollregion=canvas.bbox("all"))
-
-    scrollable_frame.bind("<Configure>", _on_frame_configure)
-
-    canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
-    canvas.configure(yscrollcommand=scrollbar.set)
-
-    canvas.pack(side="left", fill="both", expand=True)
+    scrollbar = tk.Scrollbar(list_frame, orient="vertical")
+    labelList = tk.Text(list_frame, wrap=tk.WORD, height=16, state="disabled")
+    labelList.pack(side="left", fill="both", expand=True)
     scrollbar.pack(side="right", fill="y")
+    labelList.config(yscrollcommand=scrollbar.set)
+    scrollbar.config(command=labelList.yview)
 
-    # Mousewheel scrolling support
+    # Mousewheel scrolling only when cursor is over the Text widget
     def _on_mousewheel(event):
-        canvas.yview_scroll(int(-1*(event.delta/120)), "units")
-
-    # Windows and MacOS use different event names
-    canvas.bind_all("<MouseWheel>", _on_mousewheel)
-    canvas.bind_all("<Button-4>", lambda event: canvas.yview_scroll(-1, "units"))  # Linux scroll up
-    canvas.bind_all("<Button-5>", lambda event: canvas.yview_scroll(1, "units"))   # Linux scroll down
-
-    # Ingredient label (inside scrollable frame)
-    labelList = tk.Label(scrollable_frame, text="", justify=tk.LEFT, anchor="w", wraplength=700)
-    labelList.pack(fill=tk.BOTH, anchor="w", expand=True)
+        labelList.yview_scroll(int(-1*(event.delta/120)), "units")
+    labelList.bind("<Enter>", lambda e: labelList.bind_all("<MouseWheel>", _on_mousewheel))
+    labelList.bind("<Leave>", lambda e: labelList.unbind_all("<MouseWheel>"))
 
     root.bind("<Return>", lambda event: entered())
 
