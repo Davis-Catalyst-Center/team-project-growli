@@ -445,8 +445,10 @@ def displayButtons():
         links_text.config(state="normal")
         links_text.delete("1.0", tk.END)
         for button in buttons:
-            display_text = button['text']
-            links_text.insert(tk.END, display_text + "\n")
+            # Only show links that are not None
+            if button['url'] is not None:
+                display_text = button['url']
+                links_text.insert(tk.END, display_text + "\n")
         links_text.config(state="disabled")
 
 def alphabetizeList(list):
