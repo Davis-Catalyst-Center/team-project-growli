@@ -404,8 +404,10 @@ def linkButtonClicked(buttonUrl, linkIndex):
     # Remove button from buttons list
     buttons = [b for b in buttons if b['index'] != linkIndex]
 
-    # Update everything so the display is up to date
+    # Update links list immediately after modifying allLinks
     displayButtons()
+
+    # Update everything so the display is up to date
     alphabetizedThings = alphabetizeList(allThings)
     combined = combine_ingredients(alphabetizedThings)
     lines = [f"{it.quantity} {it.unit} {it.name}".strip() for it in combined]
