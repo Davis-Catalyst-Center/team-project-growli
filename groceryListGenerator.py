@@ -492,16 +492,15 @@ def build_main_ui(root):
     list_frame = tk.Frame(root)
     list_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=(0,10))
 
-    canvas = tk.Canvas(list_frame, borderwidth=0, highlightthickness=0)
+    canvas_height = 300  # Set a reasonable height for the scrollable area
+    canvas = tk.Canvas(list_frame, borderwidth=0, highlightthickness=0, height=canvas_height)
     scrollbar = tk.Scrollbar(list_frame, orient="vertical", command=canvas.yview)
     scrollable_frame = tk.Frame(canvas)
 
-    scrollable_frame.bind(
-        "<Configure>",
-        lambda e: canvas.configure(
-            scrollregion=canvas.bbox("all")
-        )
-    )
+    def _on_frame_configure(event):
+        canvas.configure(scrollregion=canvas.bbox("all"))
+
+    scrollable_frame.bind("<Configure>", _on_frame_configure)
 
     canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
     canvas.configure(yscrollcommand=scrollbar.set)
@@ -510,8 +509,8 @@ def build_main_ui(root):
     scrollbar.pack(side="right", fill="y")
 
     # Ingredient label (inside scrollable frame)
-    labelList = tk.Label(scrollable_frame, text="", justify=tk.LEFT, anchor="w")
-    labelList.pack(fill=tk.X, anchor="w")
+    labelList = tk.Label(scrollable_frame, text="", justify=tk.LEFT, anchor="w", wraplength=700)
+    labelList.pack(fill=tk.BOTH, anchor="w", expand=True)
 
     root.bind("<Return>", lambda event: entered())
 
