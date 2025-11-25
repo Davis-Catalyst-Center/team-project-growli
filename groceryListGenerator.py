@@ -494,20 +494,40 @@ def build_main_ui(root):
     canvas.bind("<Configure>", lambda e: canvas.config(scrollregion=canvas.bbox(tk.ALL)))
 
     innerFrame = tk.Frame(canvas, pady=10, padx=15, borderwidth=0, highlightthickness=0)
-    canvas.create_window((0,0), window=innerFrame, anchor="center")
+    canvas.create_window((0, 0), window=innerFrame, anchor="center")
 
     # label for instructions
-    labelInstructions = tk.Label(innerFrame, text="Please enter a link to a recipe page and press Enter")
+    labelInstructions = tk.Label(root, text="Please enter a link to a recipe page and press Enter")
     labelInstructions.pack(pady=6)
 
     # textbox for input
-    entryLink = tk.Entry(innerFrame, width=80)
+    entryLink = tk.Entry(root, width=80)
     entryLink.pack(pady=6)
 
-    # List
-    labelList = tk.Label(innerFrame, text="", justify=tk.LEFT, anchor="w")
-    labelList.pack(fill=tk.BOTH, expand=True, padx=10, pady=6)
-    
+    # Scrollable ingredient list
+    list_frame = tk.Frame(innerFrame)
+    list_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=6)
+
+    canvas = tk.Canvas(list_frame)
+    scrollbar = tk.Scrollbar(list_frame, orient="vertical", command=canvas.yview)
+    scrollable_frame = tk.Frame(canvas)
+
+    scrollable_frame.bind(
+        "<Configure>",
+        lambda e: canvas.configure(
+            scrollregion=canvas.bbox("all")
+        )
+    )
+
+    canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+    canvas.configure(yscrollcommand=scrollbar.set)
+
+    canvas.pack(side="left", fill="both", expand=True)
+    scrollbar.pack(side="right", fill="y")
+
+    # Ingredient label (inside scrollable frame)
+    labelList = tk.Label(scrollable_frame, text="", justify=tk.LEFT, anchor="w")
+    labelList.pack(fill=tk.BOTH, expand=True)
 
     root.bind("<Return>", lambda event: entered())
 
