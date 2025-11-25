@@ -382,7 +382,10 @@ def entered():
     alphabetizedThings = alphabetizeList(allThings)
     combined = combine_ingredients(alphabetizedThings)
     lines = [f"{it.quantity} {it.unit} {it.name}".strip() for it in combined]
-    labelList.configure(text="\n".join(lines))
+        labelList.config(state="normal")
+        labelList.delete("1.0", tk.END)
+        labelList.insert(tk.END, "\n".join(lines))
+        labelList.config(state="disabled")
     entryLink.delete(0, "end")
 
 def linkButtonClicked(buttonUrl, linkIndex):
