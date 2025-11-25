@@ -508,6 +508,15 @@ def build_main_ui(root):
     canvas.pack(side="left", fill="both", expand=True)
     scrollbar.pack(side="right", fill="y")
 
+    # Mousewheel scrolling support
+    def _on_mousewheel(event):
+        canvas.yview_scroll(int(-1*(event.delta/120)), "units")
+
+    # Windows and MacOS use different event names
+    canvas.bind_all("<MouseWheel>", _on_mousewheel)
+    canvas.bind_all("<Button-4>", lambda event: canvas.yview_scroll(-1, "units"))  # Linux scroll up
+    canvas.bind_all("<Button-5>", lambda event: canvas.yview_scroll(1, "units"))   # Linux scroll down
+
     # Ingredient label (inside scrollable frame)
     labelList = tk.Label(scrollable_frame, text="", justify=tk.LEFT, anchor="w", wraplength=700)
     labelList.pack(fill=tk.BOTH, anchor="w", expand=True)
