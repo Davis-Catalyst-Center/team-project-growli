@@ -479,36 +479,20 @@ def main():
     root.mainloop()
 
 def build_main_ui(root):
-    global entryLink, labelList, innerFrame
+    global entryLink, labelList
 
-    mainFrame = tk.Frame(root, borderwidth=0, highlightthickness=0)
-    mainFrame.pack(fill=tk.BOTH, expand=True)
+    # Instructions and entry at the top
+    labelInstructions = tk.Label(root, text="Please enter a link to a recipe page and press Enter", anchor="w", justify=tk.LEFT)
+    labelInstructions.pack(fill=tk.X, padx=10, pady=(10,2))
 
-    canvas = tk.Canvas(mainFrame, borderwidth=0, highlightthickness=0)
-    canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-
-    scrollbar = tk.Scrollbar(mainFrame, orient=tk.VERTICAL, command=canvas.yview)
-    scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
-
-    canvas.config(yscrollcommand=scrollbar.set)
-    canvas.bind("<Configure>", lambda e: canvas.config(scrollregion=canvas.bbox(tk.ALL)))
-
-    innerFrame = tk.Frame(canvas, pady=10, padx=15, borderwidth=0, highlightthickness=0)
-    canvas.create_window((0, 0), window=innerFrame, anchor="center")
-
-    # label for instructions
-    labelInstructions = tk.Label(root, text="Please enter a link to a recipe page and press Enter")
-    labelInstructions.pack(pady=6)
-
-    # textbox for input
     entryLink = tk.Entry(root, width=80)
-    entryLink.pack(pady=6)
+    entryLink.pack(fill=tk.X, padx=10, pady=(0,10))
 
-    # Scrollable ingredient list
-    list_frame = tk.Frame(innerFrame)
-    list_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=6)
+    # Scrollable ingredient list below
+    list_frame = tk.Frame(root)
+    list_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=(0,10))
 
-    canvas = tk.Canvas(list_frame)
+    canvas = tk.Canvas(list_frame, borderwidth=0, highlightthickness=0)
     scrollbar = tk.Scrollbar(list_frame, orient="vertical", command=canvas.yview)
     scrollable_frame = tk.Frame(canvas)
 
@@ -527,7 +511,7 @@ def build_main_ui(root):
 
     # Ingredient label (inside scrollable frame)
     labelList = tk.Label(scrollable_frame, text="", justify=tk.LEFT, anchor="w")
-    labelList.pack(fill=tk.BOTH, expand=True)
+    labelList.pack(fill=tk.X, anchor="w")
 
     root.bind("<Return>", lambda event: entered())
 
