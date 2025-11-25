@@ -1,6 +1,13 @@
+import os
+import csv
+import hashlib
+import urllib.request as req
+import tkinter as tk
+from tkinter import messagebox
+from fractions import Fraction
+import re
 
-# --- Generalized ingredient normalization and combining ---
-import difflib
+URL = ""
 
 innerFrame = None
 entryLink = None
@@ -242,37 +249,7 @@ def combine_ingredients(items: list) -> list:
         )
         for key in agg
     ]
-import os
-import csv
-import hashlib
-import urllib.request as req
-import tkinter as tk
-from tkinter import messagebox
-from fractions import Fraction
-import re
-
-# NOTE: if you need to set DISPLAY for headless environments, set it outside the script.
-# os.environ["DISPLAY"] = ":0"
-
-URL = ""
-
-entryLink = None
-labelList = None
-allThings = []
-allLinks = []
-buttons = []
-
-# Parsing lives in a separate module to make it easy to test without importing tkinter
-
-from parser_1 import Ingredient, getHtml, getInfo
-
-# Simple in-memory user store: username -> password_hash
-USER_STORE = {}
-
-def hash_password(password: str) -> str:
-    return hashlib.sha256(password.encode("utf-8")).hexdigest()
-
-def saveUserStore(path: str = None):
+def save_user_store(path: str = None):
     """Persist USER_STORE to CSV file. Overwrites existing file.
     Each row: username, password_hash
     """
@@ -333,7 +310,7 @@ def show_register_dialog(parent) -> None:
         messagebox.showinfo("Success", f"Registered {username}")
         # persist the user store after successful registration
         try:
-            saveUserStore()
+            save_user_store()
         except Exception:
             # non-fatal; warn on console
             print("Warning: failed to save user store after registration")
