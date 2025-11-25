@@ -443,7 +443,7 @@ def makeButton(urlIndex):
 
 
 def displayButtons():
-    # Show recipe links as real buttons in the scrollable frame
+    # Show recipe links as real buttons in the unified frame
     if hasattr(entryLink.master.master, 'links_frame'):
         frame = entryLink.master.master.links_frame
         # Remove old buttons
@@ -494,49 +494,37 @@ def main():
 
 def build_main_ui(root):
     global entryLink, labelList
+
+    # Create a single scrollable frame for all content
+    main_canvas = tk.Canvas(root)
+    main_scrollbar = tk.Scrollbar(root, orient="vertical", command=main_canvas.yview)
+    main_scrollable_frame = tk.Frame(main_canvas)
+    main_scrollable_frame.bind(
+        "<Configure>",
+        lambda e: main_canvas.configure(
+            scrollregion=main_canvas.bbox("all")
+        )
+    )
+    main_canvas.create_window((0, 0), window=main_scrollable_frame, anchor="nw")
+    main_canvas.configure(yscrollcommand=main_scrollbar.set)
+    main_canvas.pack(side="left", fill="both", expand=True)
+    main_scrollbar.pack(side="right", fill="y")
+
     # label for instructions
-    labelInstructions = tk.Label(root, text="Please enter a link to a recipe page and press Enter")
+    labelInstructions = tk.Label(main_scrollable_frame, text="Please enter a link to a recipe page and press Enter")
     labelInstructions.pack(pady=6)
 
     # textbox for input
-    entryLink = tk.Entry(root, width=80)
+    entryLink = tk.Entry(main_scrollable_frame, width=80)
     entryLink.pack(pady=6)
 
-    # List
-    ingredients_frame = tk.Frame(root)
-    ingredients_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=(0, 10))
-    ingredients_scrollbar = tk.Scrollbar(ingredients_frame, orient="vertical")
-    labelList = tk.Text(ingredients_frame, wrap=tk.WORD, height=16, state="disabled")
-    labelList.pack(side="left", fill="both", expand=True)
-    ingredients_scrollbar.pack(side="right", fill="y")
-    labelList.config(yscrollcommand=ingredients_scrollbar.set)
-    ingredients_scrollbar.config(command=labelList.yview)
+    # Ingredient list
+    labelList = tk.Text(main_scrollable_frame, wrap=tk.WORD, height=16, state="disabled")
+    labelList.pack(fill="x", padx=10, pady=(0, 10))
 
-    def _on_ingredients_mousewheel(event):
-        labelList.yview_scroll(int(-1*(event.delta/120)), "units")
-    labelList.bind("<Enter>", lambda e: labelList.bind_all("<MouseWheel>", _on_ingredients_mousewheel))
-    labelList.bind("<Leave>", lambda e: labelList.unbind_all("<MouseWheel>"))
-
-    # Links section - replace Text with scrollable Frame of Buttons
-    links_frame = tk.Frame(root)
-    links_frame.pack(fill=tk.X, padx=10, pady=(0, 6))
-    canvas = tk.Canvas(links_frame, height=100)
-    scrollbar = tk.Scrollbar(links_frame, orient="vertical", command=canvas.yview)
-    scrollable_frame = tk.Frame(canvas)
-    scrollable_frame.bind(
-        "<Configure>",
-        lambda e: canvas.configure(
-            scrollregion=canvas.bbox("all")
-        )
-    )
-    canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
-    canvas.configure(yscrollcommand=scrollbar.set)
-    canvas.pack(side="left", fill="x", expand=True)
-    scrollbar.pack(side="right", fill="y")
-    root.links_frame = scrollable_frame  # Store for later updates
+    # Links section - real buttons in the same frame
+    links_frame = tk.Frame(main_scrollable_frame)
+    links_frame.pack(fill="x", padx=10, pady=(0, 6))
+    root.links_frame = links_frame  # Store for later updates
 
     root.bind("<Return>", lambda event: entered())
-
-
-if __name__ == "__main__":
-    main()
