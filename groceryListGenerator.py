@@ -9,6 +9,7 @@ import re
 
 URL = ""
 
+innerFrame = None
 entryLink = None
 labelList = None
 allThings = []
@@ -434,7 +435,7 @@ def makeButton(urlIndex):
             buttons.append(tk.Button(text=buttonText, command=lambda t=buttonText: linkButtonClicked(t)))
             """
     buttonText = allLinks[urlIndex]
-    buttons.append(tk.Button(text=f"{buttonText}, ({urlIndex})", command=lambda t = buttonText, i=urlIndex: linkButtonClicked(t, i)))
+    buttons.append(tk.Button(innerFrame, text=f"{buttonText}, ({urlIndex})", command=lambda t = buttonText, i=urlIndex: linkButtonClicked(t, i)))
     
 
 
@@ -478,17 +479,33 @@ def main():
     root.mainloop()
 
 def build_main_ui(root):
-    global entryLink, labelList
+    global entryLink, labelList, innerFrame
+
+    mainFrame = tk.Frame(root, borderwidth=0, highlightthickness=0)
+    mainFrame.pack(fill=tk.BOTH, expand=True)
+
+    canvas = tk.Canvas(mainFrame, borderwidth=0, highlightthickness=0)
+    canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+
+    scrollbar = tk.Scrollbar(mainFrame, orient=tk.VERTICAL, command=canvas.yview)
+    scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+
+    canvas.config(yscrollcommand=scrollbar.set)
+    canvas.bind("<Configure>", lambda e: canvas.config(scrollregion=canvas.bbox(tk.ALL)))
+
+    innerFrame = tk.Frame(canvas, pady=10, padx=15, borderwidth=0, highlightthickness=0)
+    canvas.create_window((0,0), window=innerFrame, anchor="center")
+
     # label for instructions
-    labelInstructions = tk.Label(root, text="Please enter a link to a recipe page and press Enter")
+    labelInstructions = tk.Label(innerFrame, text="Please enter a link to a recipe page and press Enter")
     labelInstructions.pack(pady=6)
 
     # textbox for input
-    entryLink = tk.Entry(root, width=80)
+    entryLink = tk.Entry(innerFrame, width=80)
     entryLink.pack(pady=6)
 
     # List
-    labelList = tk.Label(root, text="", justify=tk.LEFT, anchor="w")
+    labelList = tk.Label(innerFrame, text="", justify=tk.LEFT, anchor="w")
     labelList.pack(fill=tk.BOTH, expand=True, padx=10, pady=6)
     
 
