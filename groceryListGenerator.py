@@ -382,7 +382,10 @@ def entered():
     alphabetizedThings = alphabetizeList(allThings)
     combined = combine_ingredients(alphabetizedThings)
     lines = [f"{it.quantity} {it.unit} {it.name}".strip() for it in combined]
-    labelList.configure(text="\n".join(lines))
+    labelList.config(state="normal")
+    labelList.delete("1.0", tk.END)
+    labelList.insert(tk.END, "\n".join(lines))
+    labelList.config(state="disabled")
     entryLink.delete(0, "end")
 
 def linkButtonClicked(buttonUrl, linkIndex):
@@ -504,9 +507,21 @@ def build_main_ui(root):
     entryLink = tk.Entry(innerFrame, width=80)
     entryLink.pack(pady=6)
 
-    # List
-    labelList = tk.Label(innerFrame, text="", justify=tk.LEFT, anchor="w")
-    labelList.pack(fill=tk.BOTH, expand=True, padx=10, pady=6)
+   # Ingredient list with scrollbar
+list_frame = tk.Frame(innerFrame)
+list_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=6)
+
+scrollbar = tk.Scrollbar(list_frame, orient="vertical")
+labelList = tk.Text(list_frame, wrap=tk.WORD, height=16, state="disabled")
+labelList.pack(side="left", fill="both", expand=True)
+scrollbar.pack(side="right", fill="y")
+labelList.config(yscrollcommand=scrollbar.set)
+scrollbar.config(command=labelList.yview)
+
+def _on_mousewheel(event):
+    labelList.yview_scroll(int(-1*(event.delta/120)), "units")
+labelList.bind("<Enter>", lambda e: labelList.bind_all("<MouseWheel>", _on_mousewheel))
+labelList.bind("<Leave>", lambda e: labelList.unbind_all("<MouseWheel>"))
     
 
     root.bind("<Return>", lambda event: entered())
