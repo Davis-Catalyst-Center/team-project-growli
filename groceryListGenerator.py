@@ -435,7 +435,8 @@ def removeButton(removeUrl, removeIndex):
 def makeButton(urlIndex):
     global buttons
     buttonText = allLinks[urlIndex]
-    buttons.append({'text': f"{buttonText}, ({urlIndex})", 'url': buttonText, 'index': urlIndex})
+    if buttonText is not None:
+        buttons.append({'text': f"{buttonText}, ({urlIndex})", 'url': buttonText, 'index': urlIndex})
     
 
 
@@ -444,11 +445,14 @@ def displayButtons():
         links_text = entryLink.master.master.links_text
         links_text.config(state="normal")
         links_text.delete("1.0", tk.END)
+        # Rebuild buttons from allLinks to ensure consistency
+        buttons.clear()
+        for idx, link in enumerate(allLinks):
+            if link is not None:
+                buttons.append({'text': f"{link}, ({idx})", 'url': link, 'index': idx})
         for button in buttons:
-            # Only show links that are not None
-            if button['url'] is not None:
-                display_text = button['url']
-                links_text.insert(tk.END, display_text + "\n")
+            display_text = button['url']
+            links_text.insert(tk.END, display_text + "\n")
         links_text.config(state="disabled")
 
 def alphabetizeList(list):
