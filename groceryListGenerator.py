@@ -351,7 +351,7 @@ def show_login_dialog(parent) -> bool:
     parent.wait_window(dlg)
     return result["ok"]
 
-def entered():
+def entered(canvas):
     global entryLink, labelList, allThings, allLinks
     url = entryLink.get().strip()
     if not url:
@@ -377,15 +377,17 @@ def entered():
     # append parsed items to allThings and update label
     allThings.extend(items)
 
-    makeButton(indexOfUrl)
+    makeButton(indexOfUrl, canvas)
     displayButtons()
     alphabetizedThings = alphabetizeList(allThings)
     combined = combine_ingredients(alphabetizedThings)
     lines = [f"{it.quantity} {it.unit} {it.name}".strip() for it in combined]
     labelList.configure(text="\n".join(lines))
     entryLink.delete(0, "end")
+    # Configure the canvas everytime the user enters, so it matches the content
+    canvas.configure(scrollregion=canvas.bbox(tk.ALL))
 
-def linkButtonClicked(buttonUrl, linkIndex):
+def linkButtonClicked(buttonUrl, linkIndex, canvas):
     global allLinks
     # Remove the items associated with the URL, then remove the URL
     itemsToRemove = []
@@ -407,6 +409,9 @@ def linkButtonClicked(buttonUrl, linkIndex):
     lines = [f"{it.quantity} {it.unit} {it.name}".strip() for it in combined]
     labelList.configure(text="\n".join(lines))
 
+    # Configure the canvas everytime the user clicks a button, so it matches the content
+    canvas.configure(scrollregion=canvas.bbox(tk.ALL))
+
 
 def removeButton(removeUrl, removeIndex):
     global index
@@ -422,7 +427,7 @@ def removeButton(removeUrl, removeIndex):
             buttons.pop(i)
             break
 
-def makeButton(urlIndex):
+def makeButton(urlIndex, canvas):
     global buttons
     """
     for button in buttons:
@@ -435,7 +440,7 @@ def makeButton(urlIndex):
             buttons.append(tk.Button(text=buttonText, command=lambda t=buttonText: linkButtonClicked(t)))
             """
     buttonText = allLinks[urlIndex]
-    buttons.append(tk.Button(innerFrame, text=f"{buttonText}, ({urlIndex})", command=lambda t = buttonText, i=urlIndex: linkButtonClicked(t, i)))
+    buttons.append(tk.Button(innerFrame, text=f"{buttonText}, ({urlIndex})", command=lambda t = buttonText, i=urlIndex: linkButtonClicked(t, i, canvas)))
     
 
 
@@ -509,7 +514,7 @@ def build_main_ui(root):
     labelList.pack(fill=tk.BOTH, expand=True, padx=10, pady=6)
     
 
-    root.bind("<Return>", lambda event: entered())
+    root.bind("<Return>", lambda event: entered(canvas))
 
 
 if __name__ == "__main__":
