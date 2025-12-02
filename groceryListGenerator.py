@@ -217,7 +217,7 @@ def combineIngredients(items: list) -> list:
         if qty is None:
             nonNumeric.append((nameKey, unitKey, it))
             continue
-        canoUnit = getCanonicalUnit(nameKey)
+        canonUnit = getCanonicalUnit(nameKey)
         if canonUnit is None:
             canonUnit = unitKey  # fallback: use as-is
         # Handle count-to-weight for chicken and fettuccine
