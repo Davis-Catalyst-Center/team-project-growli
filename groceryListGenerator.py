@@ -9,9 +9,7 @@ import re
 
 URL = ""
 
-innerFrame = None
 entryLink = None
-entryIngredient = None
 labelList = None
 allThings = []
 allLinks = []
@@ -24,10 +22,10 @@ from parser_1 import Ingredient, getHtml, getInfo
 # Simple in-memory user store: username -> password_hash
 USER_STORE = {}
 
-def hashPassword(password: str) -> str:
+def hash_password(password: str) -> str:
     return hashlib.sha256(password.encode("utf-8")).hexdigest()
 
-def normalizeName(name: str) -> str:
+def normalize_name(name: str) -> str:
     if not name:
         return ""
     n = name.lower()
@@ -69,7 +67,7 @@ unitMap = {
     'small': ['small'],
     'medium': ['medium'],
 }
-unitConversions = {
+unit_conversions = {
     ("lb", "oz"): 16,
     ("oz", "lb"): 1/16,
     ("cup", "oz"): 8,      # for cheese, butter, etc. (approximate)
@@ -91,7 +89,7 @@ unitConversions = {
 }
 unitCanonical = {alias: canon for canon, aliases in unitMap.items() for alias in aliases}
 
-def normalizeUnit(unit: str) -> str:
+def normalize_unit(unit: str) -> str:
     if not unit:
         return ""
     u = unit.lower().strip().replace('.', '')
@@ -102,7 +100,7 @@ def normalizeUnit(unit: str) -> str:
     return unitCanonical.get(u, u)
 
 
-def parseQuantity(q: str) -> Fraction | None:
+def parse_quantity(q: str) -> Fraction | None:
     if not q:
         return None
     s = q.strip()
@@ -132,7 +130,7 @@ def parseQuantity(q: str) -> Fraction | None:
     return total
 
 
-def formatQuantity(frac: Fraction) -> str:
+def format_quantity(frac: Fraction) -> str:
     if frac is None:
         return ""
     if frac == 0:
@@ -149,7 +147,7 @@ def formatQuantity(frac: Fraction) -> str:
 
 
 # --- Improved fuzzy ingredient name normalization ---
-def canonicalizeName(name: str) -> str:
+def canonicalize_name(name: str) -> str:
     mapping = [
         (r"fettuccine.*", "fettuccine"),
         (r"chicken breast[s]?", "chicken"),
@@ -179,7 +177,7 @@ def canonicalizeName(name: str) -> str:
         n = n.replace(word, "")
     n = re.sub(r"\s+", " ", n).strip()
     return n
-ingredientUnitType = {
+ingredient_unit_type = {
     "chicken": "oz",
     "fettuccine": "oz",
     "parmesan cheese": "oz",
@@ -192,65 +190,65 @@ ingredientUnitType = {
     "lemon juice": "tbsp",
     "chicken broth": "cup",
 }
-def getCanonicalUnit(ingredient: str) -> str:
-    return ingredientUnitType.get(ingredient, None)
-def convertUnit(qty, fromUnit, toUnit):
-    if fromUnit == toUnit:
+def get_canonical_unit(ingredient: str) -> str:
+    return ingredient_unit_type.get(ingredient, None)
+def convert_unit(qty, from_unit, to_unit):
+    if from_unit == to_unit:
         return qty
-    key = (fromUnit, toUnit)
-    if key in unitConversions:
-        return qty * unitConversions[key]
+    key = (from_unit, to_unit)
+    if key in unit_conversions:
+        return qty * unit_conversions[key]
     return None  # can't convert
-ingredientCountToWeight = {
+ingredient_count_to_weight = {
     "chicken": 4,  # 1 chicken breast ≈ 4 oz
     "fettuccine": 2,  # 1 cup dry ≈ 2 oz (approximate)
 }
 
-def combineIngredients(items: list) -> list:
+def combine_ingredients(items: list) -> list:
     """Combine ingredients with improved fuzzy name and canonical unit logic."""
     agg = {}
-    nonNumeric = []
+    non_numeric = []
     for it in items:
-        nameKey = canonicalizeName(it.name)
-        unitKey = normalizeUnit(it.unit)
-        qty = parseQuantity(it.quantity)
+        name_key = canonicalize_name(it.name)
+        unit_key = normalize_unit(it.unit)
+        qty = parse_quantity(it.quantity)
         if qty is None:
-            nonNumeric.append((nameKey, unitKey, it))
+            non_numeric.append((name_key, unit_key, it))
             continue
-        canonUnit = getCanonicalUnit(nameKey)
-        if canonUnit is None:
-            canonUnit = unitKey  # fallback: use as-is
+        canon_unit = get_canonical_unit(name_key)
+        if canon_unit is None:
+            canon_unit = unit_key  # fallback: use as-is
         # Handle count-to-weight for chicken and fettuccine
-        if unitKey in ["piece", "breast", "breasts", ""] and nameKey in ingredientCountToWeight:
-            qty = qty * ingredientCountToWeight[nameKey]
-            unitKey = canonUnit
-        qtyInCanon = convertUnit(qty, unitKey, canonUnit)
-        if qtyInCanon is None and unitKey == canonUnit:
-            qtyInCanon = qty
-        if qtyInCanon is None:
+        if unit_key in ["piece", "breast", "breasts", ""] and name_key in ingredient_count_to_weight:
+            qty = qty * ingredient_count_to_weight[name_key]
+            unit_key = canon_unit
+        qty_in_canon = convert_unit(qty, unit_key, canon_unit)
+        if qty_in_canon is None and unit_key == canon_unit:
+            qty_in_canon = qty
+        if qty_in_canon is None:
             # can't convert, treat as separate
-            key = (nameKey, unitKey)
+            key = (name_key, unit_key)
             if key not in agg:
-                agg[key] = {'qty': Fraction(0), 'unit': it.unit, 'displayName': it.name}
+                agg[key] = {'qty': Fraction(0), 'unit': it.unit, 'display_name': it.name}
             agg[key]['qty'] += qty
-            if len(it.name) > len(agg[key]['displayName']):
-                agg[key]['displayName'] = it.name
+            if len(it.name) > len(agg[key]['display_name']):
+                agg[key]['display_name'] = it.name
             continue
-        key = (nameKey, canonUnit)
+        key = (name_key, canon_unit)
         if key not in agg:
-            agg[key] = {'qty': Fraction(0), 'unit': canonUnit, 'displayName': it.name}
-        agg[key]['qty'] += qtyInCanon
-        if len(it.name) > len(agg[key]['displayName']):
-            agg[key]['displayName'] = it.name
+            agg[key] = {'qty': Fraction(0), 'unit': canon_unit, 'display_name': it.name}
+        agg[key]['qty'] += qty_in_canon
+        if len(it.name) > len(agg[key]['display_name']):
+            agg[key]['display_name'] = it.name
     return [
         Ingredient(
-            name=agg[key]['displayName'],
-            quantity=formatQuantity(agg[key]['qty']),
+            name=agg[key]['display_name'],
+            quantity=format_quantity(agg[key]['qty']),
             unit=agg[key]['unit']
         )
         for key in agg
     ]
-def saveUserStore(path: str = None):
+def save_user_store(path: str = None):
     """Persist USER_STORE to CSV file. Overwrites existing file.
     Each row: username, password_hash
     """
@@ -265,7 +263,7 @@ def saveUserStore(path: str = None):
         # don't crash the app for persistence errors; show a warning instead
         print(f"Warning: could not save users to {path}: {e}")
 
-def loadUserStore(path: str = None):
+def load_user_store(path: str = None):
     if path is None:
         path = os.path.join(os.getcwd(), "Users.csv")
     if not os.path.exists(path):
@@ -285,86 +283,78 @@ def loadUserStore(path: str = None):
 
 
 
-def showRegisterDialog(parent) -> None:
+def show_register_dialog(parent) -> None:
     dlg = tk.Toplevel(parent)
     dlg.title("Register")
     dlg.grab_set()
 
     tk.Label(dlg, text="Username:").pack(pady=2)
-    userEnt = tk.Entry(dlg)
-    userEnt.pack(pady=2)
+    user_ent = tk.Entry(dlg)
+    user_ent.pack(pady=2)
 
     tk.Label(dlg, text="Password:").pack(pady=2)
-    passEnt = tk.Entry(dlg, show="*")
-    passEnt.pack(pady=2)
+    pass_ent = tk.Entry(dlg, show="*")
+    pass_ent.pack(pady=2)
 
-    def doRegister():
-        username = userEnt.get().strip()
-        password = passEnt.get()
+    def do_register():
+        username = user_ent.get().strip()
+        password = pass_ent.get()
         if not username or not password:
             messagebox.showwarning("Input Error", "Please enter both username and password.")
             return
         if username in USER_STORE:
             messagebox.showerror("Error", "Username already exists")
             return
-        USER_STORE[username] = hashPassword(password)
+        USER_STORE[username] = hash_password(password)
         messagebox.showinfo("Success", f"Registered {username}")
         # persist the user store after successful registration
         try:
-            saveUserStore()
+            save_user_store()
         except Exception:
             # non-fatal; warn on console
             print("Warning: failed to save user store after registration")
         dlg.destroy()
 
-    tk.Button(dlg, text="Register", command=doRegister).pack(pady=6)
+    tk.Button(dlg, text="Register", command=do_register).pack(pady=6)
     parent.wait_window(dlg)
 
-def showLoginDialog(parent) -> bool:
+def show_login_dialog(parent) -> bool:
     dlg = tk.Toplevel(parent)
     dlg.title("Login")
     dlg.grab_set()
 
     tk.Label(dlg, text="Username:").pack(pady=2)
-    userEnt = tk.Entry(dlg)
-    userEnt.pack(pady=2)
+    user_ent = tk.Entry(dlg)
+    user_ent.pack(pady=2)
 
     tk.Label(dlg, text="Password:").pack(pady=2)
-    passEnt = tk.Entry(dlg, show="*")
-    passEnt.pack(pady=2)
+    pass_ent = tk.Entry(dlg, show="*")
+    pass_ent.pack(pady=2)
 
     result = {"ok": False}
 
-    def doLogin():
-        username = userEnt.get().strip()
-        password = passEnt.get()
+    def do_login():
+        username = user_ent.get().strip()
+        password = pass_ent.get()
         if username not in USER_STORE:
             messagebox.showerror("Error", "Invalid Username or Password")
             return
-        if USER_STORE[username] != hashPassword(password):
+        if USER_STORE[username] != hash_password(password):
             messagebox.showerror("Error", "Invalid Username or Password")
             return
         messagebox.showinfo("Success", "Login successful")
         result["ok"] = True
         dlg.destroy()
 
-    tk.Button(dlg, text="Login", command=doLogin).pack(pady=6)
+    tk.Button(dlg, text="Login", command=do_login).pack(pady=6)
     parent.wait_window(dlg)
     return result["ok"]
 
-def entered(canvas):
+def entered():
     global entryLink, labelList, allThings, allLinks
     url = entryLink.get().strip()
-    ingredient = entryIngredient.get().strip()
-    if not url and not entryIngredient:
-        messagebox.showwarning("Input Error", "Please enter a URL or ingredient")
-        return
-    
-    if not url and ingredient:
-        enteredIngredient(ingredient)
-        entryIngredient.delete(0, "end")
-        # Configure the canvas everytime the user enters, so it matches the content
-        canvas.configure(scrollregion=canvas.bbox(tk.ALL))
+    if not url:
+        messagebox.showwarning("Input Error", "Please enter a URL")
         return
 
     try:
@@ -386,61 +376,45 @@ def entered(canvas):
     # append parsed items to allThings and update label
     allThings.extend(items)
 
-    makeButton(indexOfUrl, canvas)
+    makeButton(indexOfUrl)
     displayButtons()
     alphabetizedThings = alphabetizeList(allThings)
-    combined = combineIngredients(alphabetizedThings)
+    combined = combine_ingredients(alphabetizedThings)
     lines = [f"{it.quantity} {it.unit} {it.name}".strip() for it in combined]
-    labelList.configure(text="\n".join(lines))
+    labelList.config(state="normal")
+    labelList.delete("1.0", tk.END)
+    labelList.insert(tk.END, "\n".join(lines))
+    labelList.config(state="disabled")
     entryLink.delete(0, "end")
-    # Configure the canvas everytime the user enters, so it matches the content
-    canvas.configure(scrollregion=canvas.bbox(tk.ALL))
 
-def enteredIngredient(ingredientName):
-    foundThing = False
-    itemsToRemove = []
-    for i in range(len(allThings)):
-        if ingredientName.lower() == allThings[i].name.lower():
-            itemsToRemove.append(allThings[i])
-            foundThing = True
-    if foundThing == False:
-        messagebox.showinfo("Could Not Find", "The ingredient entered could not be found, please try again.")
-        return
-    for item in itemsToRemove:
-        allThings.remove(item)
-
-    # Update List
-    alphabetizedThings = alphabetizeList(allThings)
-    combined = combineIngredients(alphabetizedThings)
-    lines = [f"{it.quantity} {it.unit} {it.name}".strip() for it in combined]
-    labelList.configure(text="\n".join(lines))
-
-
-
-def linkButtonClicked(buttonUrl, linkIndex, canvas):
-    global allLinks
+def linkButtonClicked(buttonUrl, linkIndex):
+    global allLinks, buttons
     # Remove the items associated with the URL, then remove the URL
     itemsToRemove = []
     for i in range(len(allThings)):
-        if allThings[i].url == buttonUrl and allThings[i].index == linkIndex:
-            itemsToRemove.append(allThings[i])
-   
+        if hasattr(allThings[i], 'url') and hasattr(allThings[i], 'index'):
+            if allThings[i].url == buttonUrl and allThings[i].index == linkIndex:
+                itemsToRemove.append(allThings[i])
     for item in itemsToRemove:
         allThings.remove(item)
 
     # make allLinks at the specified index = None instead of removing it so the indexes don't get messed up
     allLinks[linkIndex] = None
 
-    # Update everything so the display is up to date
-    removeButton(buttonUrl, linkIndex)          
-    displayButtons()
-    alphabetizedThings = alphabetizeList(allThings)
-    combined = combineIngredients(alphabetizedThings)
-    lines = [f"{it.quantity} {it.unit} {it.name}".strip() for it in combined]
-    labelList.configure(text="\n".join(lines))
+    # Remove button from buttons list
+    buttons = [b for b in buttons if b['index'] != linkIndex]
 
-    # Configure the canvas everytime the user clicks a button, so it matches the content
-    canvas.configure(scrollregion=canvas.bbox(tk.ALL))
+    # Update links list immediately after modifying allLinks
+    displayButtons()
+
+    # Update everything so the display is up to date
+    alphabetizedThings = alphabetizeList(allThings)
+    combined = combine_ingredients(alphabetizedThings)
+    lines = [f"{it.quantity} {it.unit} {it.name}".strip() for it in combined]
+    labelList.config(state="normal")
+    labelList.delete("1.0", tk.END)
+    labelList.insert(tk.END, "\n".join(lines))
+    labelList.config(state="disabled")
 
 
 def removeButton(removeUrl, removeIndex):
@@ -454,19 +428,34 @@ def removeButton(removeUrl, removeIndex):
         if removeIndex == int(buttonIndex) and removeUrl == buttonUrl:
             button.pack_forget()
             button.destroy()
-            buttons.pop(i)
+            try:
+                buttons.pop(i)
+            except:
+                pass
             break
 
-def makeButton(urlIndex, canvas):
+def makeButton(urlIndex):
     global buttons
     buttonText = allLinks[urlIndex]
-    buttons.append(tk.Button(innerFrame, text=f"{buttonText}, ({urlIndex})", command=lambda t = buttonText, i=urlIndex: linkButtonClicked(t, i, canvas)))
+    if buttonText is not None:
+        buttons.append({'text': f"{buttonText}, ({urlIndex})", 'url': buttonText, 'index': urlIndex})
     
 
 
 def displayButtons():
-    for button in buttons:
-        button.pack(pady=6)
+    # Show recipe links as real buttons in the unified frame
+    if hasattr(entryLink.master.master, 'links_frame'):
+        frame = entryLink.master.master.links_frame
+        # Remove old buttons
+        for widget in frame.winfo_children():
+            widget.destroy()
+        buttons.clear()
+        for idx, link in enumerate(allLinks):
+            if link is not None:
+                btn = tk.Button(frame, text=link, fg="blue", cursor="hand2", relief=tk.RAISED,
+                                command=lambda url=link, i=idx: linkButtonClicked(url, i))
+                btn.pack(fill="x", pady=1)
+                buttons.append({'text': link, 'url': link, 'index': idx, 'widget': btn})
 
 def alphabetizeList(list):
     return sorted(list, key=lambda ingredient: ingredient.name.lower())
@@ -474,7 +463,7 @@ def alphabetizeList(list):
 
 def main():
     # load persisted users (if any)
-    loadUserStore()
+    load_user_store()
 
     root = tk.Tk()
     root.title("Grocery List Generator")
@@ -485,103 +474,61 @@ def main():
     frame.pack(pady=10)
 
     tk.Label(frame, text="Please register or login to continue").pack()
-    btnFrame = tk.Frame(frame)
-    btnFrame.pack(pady=6)
+    btn_frame = tk.Frame(frame)
+    btn_frame.pack(pady=6)
 
-    def onRegister():
-        showRegisterDialog(root)
+    def on_register():
+        show_register_dialog(root)
 
-    def onLogin():
-        ok = showLoginDialog(root)
+    def on_login():
+        ok = show_login_dialog(root)
         if ok:
             # Destroy auth frame and continue to main UI
             frame.destroy()
-            buildMainUi(root)
+            build_main_ui(root)
 
-    tk.Button(btnFrame, text="Register", command=onRegister).pack(side=tk.LEFT, padx=6)
-    tk.Button(btnFrame, text="Login", command=onLogin).pack(side=tk.LEFT, padx=6)
+    tk.Button(btn_frame, text="Register", command=on_register).pack(side=tk.LEFT, padx=6)
+    tk.Button(btn_frame, text="Login", command=on_login).pack(side=tk.LEFT, padx=6)
 
     root.mainloop()
 
-def buildMainUi(root):
-    global entryLink, labelList, innerFrame, entryIngredient
+def build_main_ui(root):
+    global entryLink, labelList
 
-    mainFrame = tk.Frame(root, borderwidth=0, highlightthickness=0)
-    mainFrame.pack(fill=tk.BOTH, expand=True)
+    # Create a single scrollable frame for all content
+    main_canvas = tk.Canvas(root)
+    main_scrollbar = tk.Scrollbar(root, orient="vertical", command=main_canvas.yview)
+    main_scrollable_frame = tk.Frame(main_canvas)
+    main_scrollable_frame.bind(
+        "<Configure>",
+        lambda e: main_canvas.configure(
+            scrollregion=main_canvas.bbox("all")
+        )
+    )
+    main_canvas.create_window((0, 0), window=main_scrollable_frame, anchor="nw")
+    main_canvas.configure(yscrollcommand=main_scrollbar.set)
+    main_canvas.pack(side="left", fill="both", expand=True)
+    main_scrollbar.pack(side="right", fill="y")
 
-    canvas = tk.Canvas(mainFrame, borderwidth=0, highlightthickness=0)
-    canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-
-    scrollbar = tk.Scrollbar(mainFrame, orient=tk.VERTICAL, command=canvas.yview)
+    scrollbar = tk.Scrollbar(main_scrollable_frame, orient=tk.VERTICAL, command=main_canvas.yview)
     scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
-
-    canvas.config(yscrollcommand=scrollbar.set)
-    canvas.bind("<Configure>", lambda e: canvas.config(scrollregion=canvas.bbox(tk.ALL)))
-
-    innerFrame = tk.Frame(canvas, pady=10, padx=15, borderwidth=0, highlightthickness=0)
-    canvas.create_window((0,0), window=innerFrame, anchor="nw")
+    main_canvas.config(yscrollcommand=scrollbar.set)
 
     # label for instructions
-    labelInstructions = tk.Label(innerFrame, text="Please enter a link to a recipe page and press Enter")
+    labelInstructions = tk.Label(main_scrollable_frame, text="Please enter a link to a recipe page and press Enter")
     labelInstructions.pack(pady=6)
 
     # textbox for input
-    entryLink = tk.Entry(innerFrame, width=80)
+    entryLink = tk.Entry(main_scrollable_frame, width=80)
     entryLink.pack(pady=6)
 
-    # label for second instructions
-    labelInstruct2 = tk.Label(innerFrame, text="Already have an ingredient? Type its name below to remove it!", font=("TkDefaultFont", 8))
-    labelInstruct2.pack(pady=3)
-
-    # Save/Load buttons
-    btn_frame = tk.Frame(innerFrame)
-    btn_frame.pack(pady=6)
-    tk.Button(btn_frame, text="Save List", command=save_grocery_list).pack(side=tk.LEFT, padx=6)
-    tk.Button(btn_frame, text="Load List", command=load_grocery_list).pack(side=tk.LEFT, padx=6)
+    # Ingredient list
+    labelList = tk.Text(main_scrollable_frame, wrap=tk.WORD, height=16, state="disabled")
+    labelList.pack(fill="x", padx=10, pady=(0, 10))
 
     # Links section - real buttons in the same frame
-    links_frame = tk.Frame(innerFrame)
+    links_frame = tk.Frame(main_scrollable_frame)
     links_frame.pack(fill="x", padx=10, pady=(0, 6))
     root.links_frame = links_frame  # Store for later updates
 
     root.bind("<Return>", lambda event: entered())
-
-def save_grocery_list():
-    global allThings
-    import tkinter.filedialog as fd
-    file_path = fd.asksaveasfilename(defaultextension=".csv", filetypes=[("CSV files", "*.csv")], title="Save Grocery List")
-    if not file_path:
-        return
-    try:
-        with open(file_path, "w", newline="", encoding="utf-8") as f:
-            writer = csv.writer(f)
-            writer.writerow(["quantity", "unit", "name"])
-            for it in allThings:
-                writer.writerow([it.quantity, it.unit, it.name])
-        messagebox.showinfo("Saved", f"Grocery list saved to {file_path}")
-    except Exception as e:
-        messagebox.showerror("Error", f"Could not save grocery list: {e}")
-
-def load_grocery_list():
-    global allThings, labelList
-    import tkinter.filedialog as fd
-    file_path = fd.askopenfilename(defaultextension=".csv", filetypes=[("CSV files", "*.csv")], title="Load Grocery List")
-    if not file_path:
-        return
-    try:
-        with open(file_path, "r", newline="", encoding="utf-8") as f:
-            reader = csv.DictReader(f)
-            loaded = []
-            for row in reader:
-                loaded.append(Ingredient(name=row["name"], quantity=row["quantity"], unit=row["unit"]))
-        allThings = loaded
-        alphabetizedThings = alphabetizeList(allThings)
-        combined = combine_ingredients(alphabetizedThings)
-        lines = [f"{it.quantity} {it.unit} {it.name}".strip() for it in combined]
-        labelList.config(state="normal")
-        labelList.delete("1.0", tk.END)
-        labelList.insert(tk.END, "\n".join(lines))
-        labelList.config(state="disabled")
-        messagebox.showinfo("Loaded", f"Grocery list loaded from {file_path}")
-    except Exception as e:
-        messagebox.showerror("Error", f"Could not load grocery list: {e}")
