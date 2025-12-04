@@ -533,55 +533,17 @@ def buildMainUi(root):
     labelInstruct2 = tk.Label(innerFrame, text="Already have an ingredient? Type its name below to remove it!", font=("TkDefaultFont", 8))
     labelInstruct2.pack(pady=3)
 
-    # Save/Load buttons
-    btn_frame = tk.Frame(innerFrame)
-    btn_frame.pack(pady=6)
-    tk.Button(btn_frame, text="Save List", command=save_grocery_list).pack(side=tk.LEFT, padx=6)
-    tk.Button(btn_frame, text="Load List", command=load_grocery_list).pack(side=tk.LEFT, padx=6)
+    # textbox for ingredient input
+    entryIngredient = tk.Entry(innerFrame, width=50, font=("TkDefaultFont", 10))
+    entryIngredient.pack(pady=3)
 
-    # Links section - real buttons in the same frame
-    links_frame = tk.Frame(innerFrame)
-    links_frame.pack(fill="x", padx=10, pady=(0, 6))
-    root.links_frame = links_frame  # Store for later updates
+    # List
+    labelList = tk.Label(innerFrame, text="", justify=tk.LEFT, anchor="w")
+    labelList.pack(fill=tk.BOTH, expand=True, padx=10, pady=6)
+    
 
-    root.bind("<Return>", lambda event: entered())
+    root.bind("<Return>", lambda event: entered(canvas))
 
-def save_grocery_list():
-    global allThings
-    import tkinter.filedialog as fd
-    file_path = fd.asksaveasfilename(defaultextension=".csv", filetypes=[("CSV files", "*.csv")], title="Save Grocery List")
-    if not file_path:
-        return
-    try:
-        with open(file_path, "w", newline="", encoding="utf-8") as f:
-            writer = csv.writer(f)
-            writer.writerow(["quantity", "unit", "name"])
-            for it in allThings:
-                writer.writerow([it.quantity, it.unit, it.name])
-        messagebox.showinfo("Saved", f"Grocery list saved to {file_path}")
-    except Exception as e:
-        messagebox.showerror("Error", f"Could not save grocery list: {e}")
 
-def load_grocery_list():
-    global allThings, labelList
-    import tkinter.filedialog as fd
-    file_path = fd.askopenfilename(defaultextension=".csv", filetypes=[("CSV files", "*.csv")], title="Load Grocery List")
-    if not file_path:
-        return
-    try:
-        with open(file_path, "r", newline="", encoding="utf-8") as f:
-            reader = csv.DictReader(f)
-            loaded = []
-            for row in reader:
-                loaded.append(Ingredient(name=row["name"], quantity=row["quantity"], unit=row["unit"]))
-        allThings = loaded
-        alphabetizedThings = alphabetizeList(allThings)
-        combined = combine_ingredients(alphabetizedThings)
-        lines = [f"{it.quantity} {it.unit} {it.name}".strip() for it in combined]
-        labelList.config(state="normal")
-        labelList.delete("1.0", tk.END)
-        labelList.insert(tk.END, "\n".join(lines))
-        labelList.config(state="disabled")
-        messagebox.showinfo("Loaded", f"Grocery list loaded from {file_path}")
-    except Exception as e:
-        messagebox.showerror("Error", f"Could not load grocery list: {e}")
+if __name__ == "__main__":
+    main()
