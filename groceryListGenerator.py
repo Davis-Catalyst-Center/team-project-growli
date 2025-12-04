@@ -521,10 +521,6 @@ def buildMainUi(root):
     innerFrame = tk.Frame(canvas, pady=10, padx=15, borderwidth=0, highlightthickness=0)
     canvas.create_window((0,0), window=innerFrame, anchor="nw")
 
-    scrollbar = tk.Scrollbar(main_scrollable_frame, orient=tk.VERTICAL, command=main_canvas.yview)
-    scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
-    main_canvas.config(yscrollcommand=scrollbar.set)
-
     # label for instructions
     labelInstructions = tk.Label(innerFrame, text="Please enter a link to a recipe page and press Enter")
     labelInstructions.pack(pady=6)
@@ -538,13 +534,13 @@ def buildMainUi(root):
     labelInstruct2.pack(pady=3)
 
     # Save/Load buttons
-    btn_frame = tk.Frame(main_scrollable_frame)
+    btn_frame = tk.Frame(innerFrame)
     btn_frame.pack(pady=6)
     tk.Button(btn_frame, text="Save List", command=save_grocery_list).pack(side=tk.LEFT, padx=6)
     tk.Button(btn_frame, text="Load List", command=load_grocery_list).pack(side=tk.LEFT, padx=6)
 
     # Links section - real buttons in the same frame
-    links_frame = tk.Frame(main_scrollable_frame)
+    links_frame = tk.Frame(innerFrame)
     links_frame.pack(fill="x", padx=10, pady=(0, 6))
     root.links_frame = links_frame  # Store for later updates
 
