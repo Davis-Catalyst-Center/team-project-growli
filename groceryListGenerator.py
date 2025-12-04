@@ -459,16 +459,6 @@ def removeButton(removeUrl, removeIndex):
 
 def makeButton(urlIndex, canvas):
     global buttons
-    """
-    for button in buttons:
-        button.pack_forget()
-        button.destroy()
-    buttons = []
-    for i in range(len(allLinks)):
-        if allLinks[i] != None:
-            buttonText = allLinks[i]
-            buttons.append(tk.Button(text=buttonText, command=lambda t=buttonText: linkButtonClicked(t)))
-            """
     buttonText = allLinks[urlIndex]
     buttons.append(tk.Button(innerFrame, text=f"{buttonText}, ({urlIndex})", command=lambda t = buttonText, i=urlIndex: linkButtonClicked(t, i, canvas)))
     
