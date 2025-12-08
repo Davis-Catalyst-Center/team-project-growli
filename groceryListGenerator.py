@@ -364,7 +364,7 @@ def entered(canvas):
         enteredIngredient(ingredient)
         entryIngredient.delete(0, "end")
         # Configure the canvas everytime the user enters, so it matches the content
-        canvas.configure(scrollregion=canvas.bbox(tk.ALL))
+        innerFrame.bind("<Configure>", lambda e: canvas.config(scrollregion=canvas.bbox(tk.ALL)))
         return
 
     try:
@@ -393,8 +393,9 @@ def entered(canvas):
     lines = [f"{it.quantity} {it.unit} {it.name}".strip() for it in combined]
     labelList.configure(text="\n".join(lines))
     entryLink.delete(0, "end")
+
     # Configure the canvas everytime the user enters, so it matches the content
-    canvas.configure(scrollregion=canvas.bbox(tk.ALL))
+    innerFrame.bind("<Configure>", lambda e: canvas.config(scrollregion=canvas.bbox(tk.ALL)))
 
 def enteredIngredient(ingredientName):
     foundThing = False
@@ -440,7 +441,7 @@ def linkButtonClicked(buttonUrl, linkIndex, canvas):
     labelList.configure(text="\n".join(lines))
 
     # Configure the canvas everytime the user clicks a button, so it matches the content
-    canvas.configure(scrollregion=canvas.bbox(tk.ALL))
+    innerFrame.bind("<Configure>", lambda e: canvas.config(scrollregion=canvas.bbox(tk.ALL)))
 
 
 def removeButton(removeUrl, removeIndex):
@@ -516,10 +517,11 @@ def buildMainUi(root):
     scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
 
     canvas.config(yscrollcommand=scrollbar.set)
-    canvas.bind("<Configure>", lambda e: canvas.config(scrollregion=canvas.bbox(tk.ALL)))
 
     innerFrame = tk.Frame(canvas, pady=10, padx=15, borderwidth=0, highlightthickness=0)
     canvas.create_window((0,0), window=innerFrame, anchor="nw")
+
+    innerFrame.bind("<Configure>", lambda e: canvas.config(scrollregion=canvas.bbox(tk.ALL)))
 
     # label for instructions
     labelInstructions = tk.Label(innerFrame, text="Please enter a link to a recipe page and press Enter")
