@@ -8,3 +8,4 @@ If opened in Github Codespaces, the webscraping will not work. To open it, we ha
 Contact Information:
 Gianna LaVanway - gianna.lavanway@gmail.com
 Brie Gardner - brie00gardner@gmail.com
+Addison Waite - pushbroom7000@gmail.com
