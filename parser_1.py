@@ -35,6 +35,75 @@ def getHtml(url: str) -> str:
 
 
 def getInfo(html: str, index = None, url: str = None):
+        def parsePioneerWoman(html):
+            # thepioneerwoman.com: ingredients in <li class="ingredient-item">
+            import re
+            items = []
+            pattern = re.compile(r'<li[^>]*class="[^"]*ingredient-item[^"]*"[^>]*>(.*?)</li>', re.DOTALL)
+            for match in pattern.finditer(html):
+                li = match.group(1)
+                text = re.sub(r'<[^>]+>', '', li).strip()
+                # Try to split: e.g. "1 cup broccoli florets"
+                parts = text.split()
+                if len(parts) >= 3:
+                    quantity, unit = parts[0], parts[1]
+                    name = ' '.join(parts[2:])
+                elif len(parts) == 2:
+                    quantity, unit = parts[0], ''
+                    name = parts[1]
+                elif len(parts) == 1:
+                    quantity, unit, name = '', '', parts[0]
+                else:
+                    continue
+                items.append(Ingredient(quantity, unit, name, index, url))
+            return items
+
+        def parseTasteOfHome(html):
+            # tasteofhome.com: ingredients in <li class="recipe-ingredients__item">
+            import re
+            items = []
+            pattern = re.compile(r'<li[^>]*class="[^"]*recipe-ingredients__item[^"]*"[^>]*>(.*?)</li>', re.DOTALL)
+            for match in pattern.finditer(html):
+                li = match.group(1)
+                text = re.sub(r'<[^>]+>', '', li).strip()
+                # Try to split: e.g. "1 can cream of chicken soup"
+                parts = text.split()
+                if len(parts) >= 3:
+                    quantity, unit = parts[0], parts[1]
+                    name = ' '.join(parts[2:])
+                elif len(parts) == 2:
+                    quantity, unit = parts[0], ''
+                    name = parts[1]
+                elif len(parts) == 1:
+                    quantity, unit, name = '', '', parts[0]
+                else:
+                    continue
+                items.append(Ingredient(quantity, unit, name, index, url))
+            return items
+
+        def parseGenericListItems(html):
+            # Generic fallback: any <li> that looks like an ingredient (contains a number and a word)
+            import re
+            items = []
+            pattern = re.compile(r'<li[^>]*>(.*?)</li>', re.DOTALL)
+            for match in pattern.finditer(html):
+                li = match.group(1)
+                text = re.sub(r'<[^>]+>', '', li).strip()
+                # Heuristic: must start with a number or fraction
+                if re.match(r'^[\d\u00BC-\u00BE\u2150-\u215E]', text):
+                    parts = text.split()
+                    if len(parts) >= 3:
+                        quantity, unit = parts[0], parts[1]
+                        name = ' '.join(parts[2:])
+                    elif len(parts) == 2:
+                        quantity, unit = parts[0], ''
+                        name = parts[1]
+                    elif len(parts) == 1:
+                        quantity, unit, name = '', '', parts[0]
+                    else:
+                        continue
+                    items.append(Ingredient(quantity, unit, name, index, url))
+            return items
     """
     Parse ingredient triples from html and return list of Ingredient.
     Dispatches to a site-specific parser if known, else tries all parsers.
@@ -137,10 +206,18 @@ def getInfo(html: str, index = None, url: str = None):
             items = parseSite3(html)
             if items:
                 return items
-        # Add more site checks here
+        if 'thepioneerwoman.' in url:
+            items = parsePioneerWoman(html)
+            if items:
+                return items
+        if 'tasteofhome.' in url:
+            items = parseTasteOfHome(html)
+            if items:
+                return items
+        # Add more site checks here for other popular recipe sites
 
     # Try all known parsers, return first with results
-    for parser in [parseSite1, parseSite2, parseSite3]:
+    for parser in [parseSite1, parseSite2, parseSite3, parsePioneerWoman, parseTasteOfHome, parseGenericListItems]:
         items = parser(html)
         if items:
             return items
